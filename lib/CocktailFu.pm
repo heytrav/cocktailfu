@@ -14,8 +14,8 @@ has schema => sub {
     my $schema_config = $config->{'CocktailFu::Schema'};
     my $connect_info  = $schema_config->{connect_info};
     ### connect info: $connect_info
-    my ( $dsn, $user, $password ) = @{$connect_info}{qw/dsn user password/};
-    my $dbh = CocktailFu::Schema->connect( $dsn, $user, $password );
+    my ( $dsn, $user, ) = @{$connect_info}{qw/dsn user/};
+    my $dbh = CocktailFu::Schema->connect( $dsn, $user, );
     return $dbh;
 };
 
@@ -47,4 +47,4 @@ sub startup {
 
 }
 
-1;
+"d'oh!";
