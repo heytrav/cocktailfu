@@ -44,6 +44,7 @@ sub startup {
 
     # Router
     my $r = $self->routes;
+    $r->route('/')->to('cocktails#index');
 
 }
 
