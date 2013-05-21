@@ -1,0 +1,26 @@
+% my $pager = $beverages->pager;
+% if ($pager->previous_page) {
+    <a href="<%= url_for(bypage => page => $pager->previous_page) %>">&lt;&lt;</a>
+% }
+% else {
+    &lt;&lt;
+% }
+
+% my $current = $pager->current_page;
+% foreach my $page_number (@{$pages}) {
+    % if ($page_number == $current) {
+        <%= $page_number %>
+    % }
+    % else {
+        <a href="<%= url_for(bypage => page => $page_number) %>">
+            <%= $page_number %>
+        </a>
+    % }
+%  }
+
+% if ($pager->next_page) {
+    <a href="<%= url_for(bypage => page => $pager->next_page) %>">&gt;&gt;</a>
+% }
+% else {
+ &gt;&gt;
+% }

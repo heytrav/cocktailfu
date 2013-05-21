@@ -1,0 +1,2 @@
+<a href="<%= url_for(bypage => page => 1) %>">All recipes</a>
+

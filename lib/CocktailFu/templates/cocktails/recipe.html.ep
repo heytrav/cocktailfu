@@ -1,0 +1,20 @@
+% layout 'default';
+% title $beverage->description.' recipe';
+
+  % my $instructions = $beverage->instructions;
+<h1><%= $beverage->description %></h1>
+<ul>
+    % while (my $recipe = $recipes->next) {
+        % my $ingredient = $recipe->ingredient;
+        % my $measurement = $recipe->measurement;
+        <li>
+            <%= $recipe->quantity %>
+            <%= $measurement->unit %>
+            <%= $ingredient->description %>
+        </li>
+
+    %    }
+    % while (my $instruction = $instructions->next) {
+        <li><%= $instruction->instruction %></li>
+    %  }
+</ul>

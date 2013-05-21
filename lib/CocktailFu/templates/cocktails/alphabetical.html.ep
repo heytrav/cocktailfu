@@ -1,0 +1,14 @@
+% layout 'default';
+% title 'Alphabetical List';
+
+%= include 'cocktails/page';
+<ul>
+    % while (my $beverage = $beverages->next) {
+        <li>
+            <a href="<%=
+                url_for(recipe => beverage => $beverage->name)
+                %>"><%= $beverage->description %>
+            </a>
+        </li>
+    %  }
+</ul>
