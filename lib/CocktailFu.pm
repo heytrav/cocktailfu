@@ -36,7 +36,7 @@ sub startup {
     $self->renderer->paths->[0] = $self->home->rel_dir('templates');
 
     if ( $self->mode eq 'production' ) {
-        $self->log->path('/home/cocktail_fu/log/cocktail_fu.log');
+        $self->log->path('/home/nanobrewerco/log/cocktail_fu.log');
     }
 
     my $config = $self->plugin('Config');
