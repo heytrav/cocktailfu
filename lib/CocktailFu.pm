@@ -63,6 +63,10 @@ sub startup {
         controller => 'cocktails',
         action     => 'recipe'
       );
+    $r->any( '/cocktail/api/:prefetch/:beverage' => { prefetch => 0 } =>
+          [ format => [qw(json)] ] )->name('jsonquery')
+      ->to( controller => 'cocktails', action => 'api' );
+
 }
 
 "d'oh!";

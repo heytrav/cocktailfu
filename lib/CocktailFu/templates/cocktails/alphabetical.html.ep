@@ -8,7 +8,14 @@
             <a href="<%=
                 url_for(recipe => beverage => $beverage->name)
                 %>"><%= $beverage->description %>
-            </a>
+            </a>,
+            <a href="<%= 
+                url_for(jsonquery => beverage => $beverage->name)
+                %>.json">&#x2081;</a>,
+            <a href="<%= 
+                url_for(jsonquery => beverage => $beverage->name, prefetch => 1)
+            %>.json">&#x2082;</a>
+
         </li>
     %  }
 </ul>

@@ -62,6 +62,44 @@ sub recipe {
     $self->stash( beverage => $beverage, recipes => $recipes );
 }
 
+sub api {
+    my $self          = shift;
+    my $beverage_name = $self->param('beverage');
+    my $prefetch      = $self->param('prefetch');
+
+    my $beverages = $self->db->resultset('Beverage');
+
+    if ($prefetch) {
+        $beverages = $beverages->search(
+            {},
+            {
+                prefetch => [
+                    'instructions', { recipes => [qw/ingredient measurement/] }
+                ]
+            }
+        );
+    }
+
+    my $beverage = $beverages->find( { name => $beverage_name } );
+    my $recipes  = $beverage->recipes;
+    my $hash     = {
+        title       => $beverage->description,
+        instruction => $beverage->instructions->first->instruction,
+
+    };
+    while ( my $recipe = $recipes->next ) {
+        my $ingredient  = $recipe->ingredient;
+        my $measurement = $recipe->measurement;
+        push @{ $hash->{ingredients} },
+          {
+            quantity   => $recipe->quantity,
+            unit       => $measurement->unit,
+            ingredient => $ingredient->description,
+          };
+    }
+    $self->render(json => $hash);
+}
+
 "d'oh";
 
 __END__
