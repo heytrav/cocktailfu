@@ -4,7 +4,7 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    VERSION   => '0.05',
+    VERSION   => '0.06',
     PREREQ_PM => {
         'Mojolicious'           => '3.97',
         'DBIx::Class'           => 0,

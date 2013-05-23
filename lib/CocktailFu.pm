@@ -7,6 +7,7 @@ use Time::HiRes qw/time/;
 
 use CocktailFu::Schema;
 use CocktailFu::SqlProfiler;
+use DBI;
 
 has schema => sub {
     my $self   = shift;
@@ -18,12 +19,22 @@ has schema => sub {
     ### connect info: $connect_info
     my ( $dsn, $user, ) = @{$connect_info}{qw/dsn user/};
     my $dbh = CocktailFu::Schema->connect( $dsn, $user, undef,
-        {pg_enable_utf8 => 1}
-    );
+        { pg_enable_utf8 => 1 } );
 
     $dbh->storage->debug(1);
     $dbh->storage->debugobj($stats);
 
+    return $dbh;
+};
+
+has dbi => sub {
+    my $self          = shift;
+    my $config        = $self->app->config;
+    my $schema_config = $config->{'CocktailFu::Schema'};
+    my $connect_info  = $schema_config->{connect_info};
+    ### connect info: $connect_info
+    my ( $dsn, $user, ) = @{$connect_info}{qw/dsn user/};
+    my $dbh = DBI->connect( $dsn, $user, undef, { pg_enable_utf8 => 1 } );
     return $dbh;
 };
 
@@ -49,6 +60,12 @@ sub startup {
             $self->app->schema;
         }
     );
+    $self->helper(
+        dbi => sub {
+             my $app = shift;
+             $self->app->dbi;
+        }
+    );
 
     # Router
     my $r = $self->routes;
@@ -66,6 +83,10 @@ sub startup {
     $r->any( '/cocktail/api/:prefetch/:beverage' => { prefetch => 0 } =>
           [ format => [qw(json)] ] )->name('jsonquery')
       ->to( controller => 'cocktails', action => 'api' );
+
+    $r->any( '/cocktail/vanilla/:prefetch/:beverage' => { prefetch => 0 } =>
+          [ format => [qw(json)] ] )->name('vanillajsonquery')
+      ->to( controller => 'cocktails', action => 'vanilla' );
 
 }
 

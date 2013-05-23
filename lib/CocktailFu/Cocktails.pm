@@ -97,7 +97,142 @@ sub api {
             ingredient => $ingredient->description,
           };
     }
-    $self->render(json => $hash);
+    $self->render( json => $hash );
+}
+
+sub vanilla {
+    my $self          = shift;
+    my $beverage_name = $self->param('beverage');
+    my $prefetch      = $self->param('prefetch');
+    my $dbh           = $self->dbi;
+
+    my $result_hash = {};
+    if ($prefetch) {
+        my $query = qq{
+                SELECT
+                    me.id,
+                    me.name,
+                    me.description,
+                    instructions.id,
+                    instructions.beverage,
+                    instructions.instruction,
+                    recipes.beverage,
+                    recipes.ingredient,
+                    recipes.measurement,
+                    recipes.quantity,
+                    ingredient.id,
+                    ingredient.name,
+                    ingredient.description,
+                    measurement.id,
+                    measurement.name,
+                    measurement.unit 
+                FROM
+                    beverages me 
+                    LEFT JOIN instructions instructions ON instructions.beverage = me.id 
+                    LEFT JOIN recipes recipes ON recipes.beverage = me.id 
+                    LEFT JOIN ingredients ingredient ON ingredient.id = recipes.ingredient 
+                    LEFT JOIN measurements measurement ON measurement.id = recipes.measurement 
+                WHERE
+                    ( me.name = ? ) 
+                ORDER BY
+                    me.id
+
+        };
+        my $stmt = $dbh->prepare($query);
+        $self->app->log->debug($query);
+        $stmt->execute($beverage_name);
+        my $results = $stmt->fetchall_arrayref;
+        foreach my $result ( @{$results} ) {
+            my ( $beverage_name, $instruction, $quantity, $ingredient, $unit )
+              = @{$result}[ 2, 5, 9, 12, 15 ];
+            $result_hash->{title}         = $beverage_name,
+              $result_hash->{instruction} = $instruction;
+            push @{ $result_hash->{ingredients} },
+              {
+                quantity   => $quantity,
+                ingredient => $ingredient,
+                unit       => $unit
+              };
+        }
+    }
+    else {
+        my $select_beverages = qq{
+            SELECT me.id, me.name, me.description FROM beverages me
+            WHERE ( me.name = ? )
+        };
+
+        my $beverage_stmt  = $dbh->prepare($select_beverages);
+        my $select_recipes = qq{
+            SELECT me.beverage, me.ingredient, me.measurement, me.quantity
+            FROM recipes me WHERE ( me.beverage = ? )
+            };
+        my $recipe_stmt        = $dbh->prepare($select_recipes);
+        my $select_ingredients = qq{
+            SELECT me.id, me.name, me.description FROM ingredients me
+            WHERE ( me.id = ? )
+            };
+        my $ingredient_stmt = $dbh->prepare($select_ingredients);
+
+        my $select_measurement = qq{
+                SELECT me.id, me.name, me.unit
+                FROM measurements me
+                WHERE ( me.id = ? )
+            };
+        my $measurement_stmt   = $dbh->prepare($select_measurement);
+        my $select_instruction = qq{
+                SELECT
+                    me.id,
+                    me.beverage,
+                    me.instruction
+                FROM
+                    instructions me
+                WHERE
+                    ( me.beverage = ? )
+           };
+        $self->app->log->debug($select_instruction);
+        my $instruction_stmt = $dbh->prepare($select_instruction);
+
+        $beverage_stmt->execute($beverage_name);
+        $self->app->log->debug($select_beverages);
+        my $beverage_set = $beverage_stmt->fetchall_arrayref;
+        if ($beverage_set) {
+            my $first_beverage = shift @{$beverage_set};
+            my ( $beverage_id, $beverage_description ) =
+              @{$first_beverage}[ 0, 2 ];
+            $instruction_stmt->execute($beverage_id);
+            my $instruct_result = $instruction_stmt->fetchrow_arrayref;
+            my $instruction     = $instruct_result->[2];
+            $result_hash->{title}       = $beverage_description;
+            $result_hash->{instruction} = $instruction;
+            $recipe_stmt->execute($beverage_id);
+            $self->app->log->debug($select_recipes);
+            my $recipe_set = $recipe_stmt->fetchall_arrayref;
+
+            foreach my $recipe ( @{$recipe_set} ) {
+                my ( $bev, $ingredient_id, $measurement_id, $quantity ) =
+                  @{$recipe};
+                $self->app->log->debug($select_ingredients);
+                $ingredient_stmt->execute($ingredient_id);
+                my $ingred_result = $ingredient_stmt->fetchall_arrayref;
+                my $ingredient_description = $ingred_result->[0]->[2];
+
+                $self->app->log->debug($select_measurement);
+                $measurement_stmt->execute($measurement_id);
+                my $measurement_result = $measurement_stmt->fetchall_arrayref;
+                my $measurement_unit   = $measurement_result->[0]->[2];
+                push @{ $result_hash->{ingredients} },
+                  {
+                    ingredient => $ingredient_description,
+                    quantity   => $quantity,
+                    unit       => $measurement_unit
+                  };
+            }
+
+        }
+
+    }
+    $self->render( json => $result_hash );
+
 }
 
 "d'oh";
