@@ -80,11 +80,11 @@ sub startup {
         controller => 'cocktails',
         action     => 'recipe'
       );
-    $r->any( '/cocktail/api/:prefetch/:beverage' => { prefetch => 0 } =>
+    $r->any( '/cocktail/dbic/:prefetch/:beverage' => { prefetch => 0 } =>
           [ format => [qw(json)] ] )->name('jsonquery')
-      ->to( controller => 'cocktails', action => 'api' );
+      ->to( controller => 'cocktails', action => 'dbic' );
 
-    $r->any( '/cocktail/vanilla/:prefetch/:beverage' => { prefetch => 0 } =>
+    $r->any( '/cocktail/dbi/:prefetch/:beverage' => { prefetch => 0 } =>
           [ format => [qw(json)] ] )->name('vanillajsonquery')
       ->to( controller => 'cocktails', action => 'vanilla' );
 

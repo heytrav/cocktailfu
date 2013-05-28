@@ -6,15 +6,39 @@
     % while (my $beverage = $beverages->next) {
         <li>
             <a href="<%=
-                url_for(recipe => beverage => $beverage->name)
+                url_for('recipe' => beverage => $beverage->name)
                 %>"><%= $beverage->description %>
             </a>,
-            <a href="<%= 
-                url_for(jsonquery => beverage => $beverage->name)
-                %>.json">&#x2081;</a>,
-            <a href="<%= 
-                url_for(jsonquery => beverage => $beverage->name, prefetch => 1)
-            %>.json">&#x2082;</a>
+
+            <a href="<%=
+                url_for( 'vanillajsonquery', beverage => $beverage->name )
+                %>.json">
+                &#x2081;
+            </a>,
+
+            <a href="<%=
+                url_for(
+                    'vanillajsonquery',
+                    beverage => $beverage->name,
+                    prefetch => 1
+                )
+                %>.json" >
+                &#x2082;
+            </a>,
+            <a href="<%=
+                url_for('jsonquery' => beverage => $beverage->name)
+                %>.json">
+                &#x2083;
+            </a>,
+            <a href="<%=
+                url_for(
+                    'jsonquery',
+                    beverage => $beverage->name,
+                    prefetch => 1
+                  )
+                  %>.json">
+                  &#x2084;
+            </a>
 
         </li>
     %  }
