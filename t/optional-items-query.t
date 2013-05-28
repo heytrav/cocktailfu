@@ -11,74 +11,65 @@ use Test::Exception;
 
 #use Smart::Comments;
 
-sub optional_query_param {
+test complicated_search_query =>
+  { desc => 'Search for assorted optional/required ingredients' } => sub {
     my ( $self, $args ) = @_;
     my $optionals = $args->{optionals};
     my $required  = $args->{required};
-    my ( @ingredient_joins, @or_param );
+    my ( @query_fields, @ingredient_joins, @or_param );
 
-    # Setup fields
-    if ( @{$optionals} ) {
-        push @ingredient_joins, { recipes => 'ingredient' };
-        my @or_list;
-        foreach my $optional ( @{$optionals} ) {
-            push @or_list,
-              {
-                'ingredient.description' => {
-                    ilike => '%' . $optional . '%'
-                }
-              };
-        }
-        push @or_param, '-or' => \@or_list;
+    my $rs;
+    lives_ok {
+        $rs = $self->dbic->resultset('Beverage')->search(
+            {
+                -or => [
+                    { 'ingredient.description' => { ilike => '%vodka%' } },
+                    { 'ingredient.description' => { ilike => '%gin%' } },
+                    { 'ingredient.description' => { ilike => '%grenadine%' } },
+                ],
+                'ingredient_2.description' => { ilike => '%schnapps%' },
+                'ingredient_3.description' => { ilike => '%orange juice%' }
+            },
+            {
+                join => [
+                    { recipes => 'ingredient' },
+                    { recipes => 'ingredient' },
+                    { recipes => 'ingredient' },
+                ]
+            }
+        );
+
     }
-    my $count = 2;
-    my @query_fields;
-    foreach my $required_ingred ( @{$required} ) {
-        my $field = join '_' => 'ingredient', $count;
-        my $field_name = join '.' => $field, 'description';
-        push @query_fields,
-          { $field_name => { ilike => '%' . $required_ingred . '%' } };
+    'No problems executing query.';
 
-        push @ingredient_joins, { recipes => 'ingredient' };
-        $count++;
-    }
-
-    # Actual query
-    my $rs = $self->dbic->resultset('Beverage')
-      ->search( {@or_param}, { join => [@ingredient_joins] } );
-
-    foreach my $required_query (@query_fields) {
-        $rs = $rs->search($required_query);
-    }
-    return $rs->search(
-        {},
-        {
-            '+select' => [ { count => '*' } ],
-            '+as'     => ['beverage_count'],
-            group_by  => [qw/me.id me.name me.description/],
-            order_by => { -desc => [qw/count/] }
-
-        }
-    );
-}
+    my $chosen_beverage =
+      $rs->search( { 'me.description' => 'Puerto Rican Punch' } )->first;
+    my $name = $chosen_beverage->name;
+    is( $name, 'puerto-rican-punch', 'Found my cocktail' );
+  };
 
 test dbic_search =>
   { desc => 'Test search for recipes using mixed join clauses.' } => sub {
     my $self      = shift;
     my @optionals = ( 'vodka', 'gin', 'grenadine' );
     my @required  = ( 'schnapps', 'orange juice' );
-    my $grouped   = $self->optional_query_param(
-        {
-            optionals => \@optionals,
-            required  => \@required
-        }
-    );
+    my $grouped;
+    lives_ok {
+        $grouped = $self->dbic->resultset('Beverage')->mixed_opt_ingredients(
+            {
+                optionals => \@optionals,
+                required  => \@required
+            }
+        );
+
+    }
+    'No problems executing query';
     my $first = $grouped->first;
 
-    my $after_supper =
+    my $chosen_beverage =
       $grouped->search( { 'me.description' => 'Puerto Rican Punch' } )->first;
-    my $name = $after_supper->name;
-    like( $name, qr/puerto\-rican\-punch/, 'Found my cocktail' );
+    my $name = $chosen_beverage->name;
+    is( $name, 'puerto-rican-punch', 'Found my cocktail' );
   };
 
 run_me;

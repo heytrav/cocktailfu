@@ -39,6 +39,62 @@ sub find_by_ingredients {
     return $rs;
 }
 
+=head2 mixed_opt_ingredients
+
+Query using assortment of I<optional> and I<required> parameters. Sort
+resultset by number of ingredients found with highest number of hits at the
+top.
+
+=cut
+
+sub mixed_opt_ingredients {
+    my ($self, $args) = @_;
+    my $optionals = $args->{optionals};
+    my $required  = $args->{required};
+    my (@query_fields, @ingredient_joins, @or_param );
+
+    # Setup fields
+    if ( @{$optionals} ) {
+        push @ingredient_joins, { recipes => 'ingredient' };
+        my @or_list;
+        foreach my $optional ( @{$optionals} ) {
+            push @or_list,
+              {
+                'ingredient.description' => {
+                    ilike => '%' . $optional . '%'
+                }
+              };
+        }
+        push @or_param, '-or' => \@or_list;
+    }
+    my $count = 2;
+    foreach my $required_ingred ( @{$required} ) {
+        my $field = join '_' => 'ingredient', $count;
+        my $field_name = join '.' => $field, 'description';
+        push @query_fields,
+          { $field_name => { ilike => '%' . $required_ingred . '%' } };
+
+        push @ingredient_joins, { recipes => 'ingredient' };
+        $count++;
+    }
+
+    # Actual query
+    my $rs = $self->search( {@or_param}, { join => [@ingredient_joins] } );
+
+    $rs = $rs->search($_) foreach @query_fields;
+
+    # Group search results.
+    return $rs->search(
+        {},
+        {
+            '+select' => [ { count => '*' } ],
+            group_by  => [qw/me.id me.name/],
+            order_by => { -desc => [qw/count/] }
+
+        }
+    );
+}
+
 1;
 
 __END__
