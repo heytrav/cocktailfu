@@ -78,9 +78,10 @@ sub mixed_opt_ingredients {
         $count++;
     }
 
-    # Actual query
+    # Actual query with "-or" param
     my $rs = $self->search( {@or_param}, { join => [@ingredient_joins] } );
 
+    # Search for required stuff separately.
     $rs = $rs->search($_) foreach @query_fields;
 
     # Group search results.
