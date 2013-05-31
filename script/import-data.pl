@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -6,65 +6,31 @@ use warnings;
 use 5.010;
 use YAML qw/Load Dump/;
 
-#use DB::CouchDB;
 use Getopt::Long;
-use Encode;
+#use Encode;
 use Regexp::Assemble;
 use Smart::Comments;
 
 use CocktailFu::Schema;
-my $dbh =
-  CocktailFu::Schema->connect(
-      "dbi:Pg:database=cocktails", "cocktail" );
 
 my $dir;
 
 GetOptions( 'directory=s' => \$dir );
 
-#my $db            = DB::CouchDB->new( host => 'localhost', db => 'cocktails' );
 my @alcohol_files = glob $dir . '*';
-my @measurements  = qw/
-  shots
-  cans
-  shot can
-  twist
-  twists
-  dashes
-  pint pints
-  L
-  gal
-  splashes
-  oz
-  cup
-  part
-  parts
-  cl
-  ml
-  dl
-  dash
-  pinch
-  shot
-  gram
-  drop
-  drops
-  tsps
-  tblsp
-  tblsps
-  tsp
-  splash
-  liter
-  gallon
-  cups
-  bottle
-  bottles
-  /;
-my $ra = Regexp::Assemble->new();
+my $ra            = Regexp::Assemble->new();
 
 map { $ra->add( $_ . '(?:\.)?' ); } @measurements;
 my $re = $ra->re();
 
-foreach my $recipe_file (@alcohol_files) {  ### Working===[%]     done
-    open my $bh, "<:utf8", $recipe_file or die "Could not read from recipe";
+my $dbh =
+  CocktailFu::Schema->connect( "dbi:Pg:database=cocktails", "cocktail" );
+
+my $beverage_rs = $dbh->resultset('Beverage');
+
+foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
+    open my $bh, "<:encoding(utf8)", $recipe_file
+      or die "Could not read from recipe";
     my $processed = do { local $/; <$bh> };
     close $bh;
 
@@ -72,31 +38,34 @@ foreach my $recipe_file (@alcohol_files) {  ### Working===[%]     done
 
     my $beverage_seen = {};
     foreach my $recipe ( @{$data} ) {
-        my $title = $recipe->{title};
+        my $title          = $recipe->{title};
         my $ingredients    = delete $recipe->{ingredients};
         my $ingredient_set = [];
-        my $beverage_name  = cleanse_name( $title );
-        if ($beverage_seen->{$beverage_name}++) {
-          $title = join ' '  => $title,$beverage_seen->{$beverage_name};
-          $beverage_name = cleanse_name($title);
-          $beverage_seen->{$beverage_name}++;
+        my $beverage_name  = cleanse_name($title);
+        if ( $beverage_seen->{$beverage_name}++ ) {
+            $title = join ' ' => $title, $beverage_seen->{$beverage_name};
+            $beverage_name = cleanse_name($title);
+            $beverage_seen->{$beverage_name}++;
         }
 
-
-        my $beverage_in_db = $dbh->resultset('Beverage')->create(
+        # Create the beverage
+        my $beverage_in_db = $beverage_rs->create(
             {
                 name        => $beverage_name,
                 description => $recipe->{title}
             }
-        ) ;
+        );
+
+        # Add instruction
+        $beverage_in_db->add_to_instructions(
+            { instruction => $recipe->{instructions} } );
 
         my $unique_beverage_ingredients;
         foreach my $ingredient ( @{$ingredients} ) {
             my ( $quantity, $stuff ) = $ingredient =~ m{^
                 (?:
                    (
-                     (?:
-                        (?! $re).)*
+                     (?: (?! $re).)*
                        $re
                      )\s+
                   )?
@@ -112,6 +81,7 @@ foreach my $recipe_file (@alcohol_files) {  ### Working===[%]     done
                 $quantity =~ s/\s*$re\s*//g;
                 my $measure = cleanse_name($raw_measure);
 
+                # Insert all the things
                 $beverage_in_db->add_to_recipes(
                     {
                         ingredient => {
@@ -130,9 +100,6 @@ foreach my $recipe_file (@alcohol_files) {  ### Working===[%]     done
                 );
             }
         }
-        $beverage_in_db->add_to_instructions(
-            { instruction => $recipe->{instructions} } );
-
     }
 }
 
@@ -144,4 +111,45 @@ sub cleanse_name {
     $name =~ s/[\s\-\.\'\",]+/-/g;
     $name =~ s/[-\.\/]$//;
     return $name;
+}
+
+sub measurement_units {
+    my $measurements = [
+        qw/
+          shots
+          cans
+          shot can
+          twist
+          twists
+          dashes
+          pint pints
+          L
+          gal
+          splashes
+          oz
+          cup
+          part
+          parts
+          cl
+          ml
+          dl
+          dash
+          pinch
+          shot
+          gram
+          drop
+          drops
+          tsps
+          tblsp
+          tblsps
+          tsp
+          splash
+          liter
+          gallon
+          cups
+          bottle
+          bottles
+          /
+
+    ];
 }
