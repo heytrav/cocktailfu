@@ -27,6 +27,8 @@ sub query_end {
     my @params  = @_;
     my $elapsed = sprintf "%0.4f", ( time - $start );
     $self->print("Execution took $elapsed seconds.\n");
+    my $line = "-" x 78;
+    $self->print($line."\n");
     $start = undef;
 }
 
