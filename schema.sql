@@ -8,6 +8,50 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
+SET search_path = public, pg_catalog;
+
+ALTER TABLE ONLY public.recipes DROP CONSTRAINT recipes_measurement_fkey;
+ALTER TABLE ONLY public.recipes DROP CONSTRAINT recipes_ingredient_fkey;
+ALTER TABLE ONLY public.recipes DROP CONSTRAINT recipes_beverage_fkey;
+ALTER TABLE ONLY public.instructions DROP CONSTRAINT instructions_beverage_fkey;
+ALTER TABLE ONLY public.ingredients DROP CONSTRAINT unique_ingredient;
+ALTER TABLE ONLY public.beverages DROP CONSTRAINT unique_beverage;
+ALTER TABLE ONLY public.recipes DROP CONSTRAINT recipes_pkey;
+ALTER TABLE ONLY public.measurements DROP CONSTRAINT measurements_pkey;
+ALTER TABLE ONLY public.instructions DROP CONSTRAINT instructions_pkey;
+ALTER TABLE ONLY public.ingredients DROP CONSTRAINT ingredients_pkey;
+ALTER TABLE ONLY public.beverages DROP CONSTRAINT beverages_pkey;
+ALTER TABLE public.measurements ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.instructions ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.ingredients ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.beverages ALTER COLUMN id DROP DEFAULT;
+DROP TABLE public.recipes;
+DROP SEQUENCE public.measurements_id_seq;
+DROP TABLE public.measurements;
+DROP SEQUENCE public.instructions_id_seq;
+DROP TABLE public.instructions;
+DROP SEQUENCE public.ingredients_id_seq;
+DROP TABLE public.ingredients;
+DROP SEQUENCE public.beverages_id_seq;
+DROP TABLE public.beverages;
+DROP EXTENSION plpgsql;
+DROP SCHEMA public;
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA public;
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
 --
