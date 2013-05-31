@@ -61,8 +61,8 @@ foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
             { instruction => $recipe->{instructions} } );
 
         my $unique_beverage_ingredients;
-        foreach my $ingredient ( @{$ingredients} ) {
-            my ( $quantity, $stuff ) = $ingredient =~ m{^
+        foreach my $ingredient_raw ( @{$ingredients} ) {
+            my ( $quantity, $ingredient ) = $ingredient_raw =~ m{^
                 (?:
                    (
                      (?: (?! $re).)*
@@ -72,10 +72,10 @@ foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
                 (.*)$
                 }x;
 
-            if ( $quantity and $stuff ) {
+            if ( $quantity and $ingredient ) {
 
-                my $clean_stuff = cleanse_name($stuff);
-                next if $unique_beverage_ingredients->{$clean_stuff}++;
+                my $clean_ingredient = cleanse_name($ingredient);
+                next if $unique_beverage_ingredients->{$clean_ingredient}++;
 
                 my ($raw_measure) = $quantity =~ /($re)/;
                 $quantity =~ s/\s*$re\s*//g;
@@ -85,8 +85,8 @@ foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
                 $beverage_in_db->add_to_recipes(
                     {
                         ingredient => {
-                            name        => $clean_stuff,
-                            description => $stuff
+                            name        => $clean_ingredient,
+                            description => $ingredient
                         },
                         measurement => {
                             name => $measure,
