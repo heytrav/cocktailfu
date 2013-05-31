@@ -7,11 +7,13 @@ use 5.010;
 use YAML qw/Load Dump/;
 
 use Getopt::Long;
+
 #use Encode;
 use Regexp::Assemble;
 use Smart::Comments;
 
 use CocktailFu::Schema;
+use CocktailFu::SqlProfiler;
 
 my $dir;
 
@@ -19,16 +21,22 @@ GetOptions( 'directory=s' => \$dir );
 
 my @alcohol_files = glob $dir . '*';
 my $ra            = Regexp::Assemble->new();
+my $measurements  = measurement_units();
 
-map { $ra->add( $_ . '(?:\.)?' ); } @measurements;
+map { $ra->add( $_ . '(?:\.)?' ); } @{$measurements};
 my $re = $ra->re();
 
 my $dbh =
-  CocktailFu::Schema->connect( "dbi:Pg:database=cocktails", "cocktail" );
+  CocktailFu::Schema->connect( "dbi:Pg:database=cocktails",
+    "cocktail", undef, { pg_enable_utf8 => 1 } );
+my $stats = CocktailFu::SqlProfiler->new;
+$dbh->storage->debug(1);
+$dbh->storage->debugobj($stats);
 
 my $beverage_rs = $dbh->resultset('Beverage');
 
-foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
+my $count = 0;
+foreach my $recipe_file (@alcohol_files) {    ### importing===[%]     done
     open my $bh, "<:encoding(utf8)", $recipe_file
       or die "Could not read from recipe";
     my $processed = do { local $/; <$bh> };
@@ -100,8 +108,11 @@ foreach my $recipe_file (@alcohol_files) {    ### Working===[%]     done
                 );
             }
         }
+    $count++;
     }
 }
+
+say "Imported $count recipes.";
 
 sub cleanse_name {
     my $word = shift;
