@@ -48,10 +48,12 @@ top.
 =cut
 
 sub mixed_opt_ingredients {
-    my ($self, $args) = @_;
+    my ( $self, $args ) = @_;
     my $optionals = $args->{optionals};
     my $required  = $args->{required};
-    my (@query_fields, @ingredient_joins, @or_param );
+    my ( @query_fields, @ingredient_joins, @or_param );
+
+    my $count = 1;
 
     # Setup fields
     if ( @{$optionals} ) {
@@ -66,10 +68,11 @@ sub mixed_opt_ingredients {
               };
         }
         push @or_param, '-or' => \@or_list;
+        $count++;
     }
-    my $count = 2;
     foreach my $required_ingred ( @{$required} ) {
-        my $field = join '_' => 'ingredient', $count;
+        my $field = 'ingredient';
+        $field = join '_' => $field, $count unless $count == 1;
         my $field_name = join '.' => $field, 'description';
         push @query_fields,
           { $field_name => { ilike => '%' . $required_ingred . '%' } };
@@ -91,7 +94,6 @@ sub mixed_opt_ingredients {
             '+select' => [ { count => '*' } ],
             group_by  => [qw/me.id me.name/],
             order_by => { -desc => [qw/count/] }
-
         }
     );
 }

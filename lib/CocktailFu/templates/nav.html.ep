@@ -1,2 +1,12 @@
-<a href="<%= url_for(bypage => page => 1) %>">All recipes</a>
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="brand" href="<%= url_for(bypage => page => 1)
+            %>">App</a>
+            <ul class="nav">
+                <li><a href="<%= url_for('mixer') %>">Search recipes</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
 

@@ -1,26 +1,31 @@
-% my $pager = $beverages->pager;
-% if ($pager->previous_page) {
-    <a href="<%= url_for(bypage => page => $pager->previous_page) %>">&lt;&lt;</a>
-% }
-% else {
-    &lt;&lt;
-% }
+<div class="pagination">
+<ul>
+        % my $pager = $beverages->pager;
+        % my $previous_class ='';
+        % my $next_class = '';
+        % $previous_class = 'class=disabled' unless $pager->previous_page;
+        % $next_class = 'class=disabled' unless $pager->next_page;
+        <li <%= $previous_class %> >
+            <a href="<%=
+            url_for(bypage => page => $pager->previous_page)
+            %>">&lt;&lt;</a>
+        </li>
 
-% my $current = $pager->current_page;
-% foreach my $page_number (@{$pages}) {
-    % if ($page_number == $current) {
-        <%= $page_number %>
-    % }
-    % else {
-        <a href="<%= url_for(bypage => page => $page_number) %>">
-            <%= $page_number %>
-        </a>
-    % }
-%  }
+    % my $current = $pager->current_page;
+    % foreach my $page_number (@{$pages}) {
+        % my $active_class = '';
+        % $active_class = 'class=active' if $page_number == $current;
+        <li <%= $active_class %> >
+            <a href="<%= url_for(bypage => page => $page_number) %>">
+                <%= $page_number %>
+            </a>
+        </li>
+    %  }
 
-% if ($pager->next_page) {
-    <a href="<%= url_for(bypage => page => $pager->next_page) %>">&gt;&gt;</a>
-% }
-% else {
- &gt;&gt;
-% }
+        <li <%= $next_class %> >
+            <a href="<%=
+                url_for(bypage => page => $pager->next_page)
+                %>">&gt;&gt;</a>
+        </li>
+</ul>
+</div>

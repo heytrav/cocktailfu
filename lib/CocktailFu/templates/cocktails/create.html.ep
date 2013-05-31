@@ -1,0 +1,4 @@
+% layout 'default';
+% title 'Create a cocktail';
+
+<%== $form->render %>

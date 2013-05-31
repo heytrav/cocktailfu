@@ -4,6 +4,9 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Time::HiRes qw/time/;
 
+use CocktailFu::Forms::Mixer;
+use CocktailFu::Forms::EditCocktail;
+
 sub index {
     my $self = shift;
 
@@ -30,7 +33,7 @@ sub alphabetical {
     my $previous = $current - 1;
     my $next     = $current + 1;
 
-    while ( scalar @pages < 20 ) {
+    while ( scalar @pages < 10 ) {
         unshift @pages, $previous if $previous > 0;
         $previous--;
         push @pages, $next if $next <= $last;
@@ -272,13 +275,56 @@ sub vanilla {
 
 }
 
-sub whats_in_cabinet {
+sub mixer {
+    my $self       = shift;
+    my $form       = CocktailFu::Forms::Mixer->new;
+    my $action     = $self->url_for('mixer');
+    my $req_params = $self->req->params->to_hash;
+
+    $form->process(
+        action => $action,
+        params => $req_params
+    );
+
+    my $results;
+    if ( $form->validated ) {
+        my ( @optional, @required );
+        foreach my $count ( 1 .. 6 ) {
+            my $ingredient = $req_params->{ 'ingredient' . $count };
+            next if not $ingredient or $ingredient =~ /^\s*$/;
+
+            my $required = $req_params->{ 'required' . $count };
+
+            if ($required) {
+                push @required, $ingredient;
+            }
+            else {
+                push @optional, $ingredient;
+            }
+        }
+        $results = $self->db->resultset('Beverage')->mixed_opt_ingredients(
+            {
+                optionals => \@optional,
+                required  => \@required
+            }
+        );
+    }
+    $self->stash( form => $form, cocktails => $results );
+}
+
+sub create {
     my $self = shift;
-    my @keys = qw/param1 param2 param3 param4 param5/;
-    my @params;
-    push @params, $self->params($_) foreach @keys;
-    my $results = $self->db->find_by_ingredients(@params);
-    $self->stash( beverages => $results );
+    my $form = CocktailFu::Forms::EditCocktail->new;
+    my $action = $self->url_for('createcocktail');
+    $form->process(
+       params => $self->req->params->to_hash,
+       schema => $self->db,
+       action => $action
+    );
+    if ($form->validated) {
+        $self->redirect_to('/');
+    }
+    $self->stash(form => $form);
 }
 
 "d'oh";

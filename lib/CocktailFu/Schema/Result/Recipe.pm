@@ -13,9 +13,9 @@ __PACKAGE__->set_primary_key(qw/beverage ingredient/);
 __PACKAGE__->belongs_to(
     beverage => Beverage => { 'foreign.id' => 'self.beverage' } );
 __PACKAGE__->belongs_to(
-    ingredient => Ingredient => { 'foreign.id' => 'self.ingredient' } );
+    ingredient => 'CocktailFu::Schema::Result::Ingredient' => { 'foreign.id' => 'self.ingredient' } );
 __PACKAGE__->belongs_to(
-    measurement => Measurement => { 'foreign.id' => 'self.measurement' } );
+    measurement => 'CocktailFu::Schema::Result::Measurement' => { 'foreign.id' => 'self.measurement' } );
 
 1;
 

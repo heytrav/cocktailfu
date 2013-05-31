@@ -62,8 +62,8 @@ sub startup {
     );
     $self->helper(
         dbi => sub {
-             my $app = shift;
-             $self->app->dbi;
+            my $app = shift;
+            $self->app->dbi;
         }
     );
 
@@ -87,6 +87,11 @@ sub startup {
     $r->any( '/cocktail/dbi/:prefetch/:beverage' => { prefetch => 0 } =>
           [ format => [qw(json)] ] )->name('vanillajsonquery')
       ->to( controller => 'cocktails', action => 'vanilla' );
+    $r->any('/cocktail/mixer')->name('mixer')->to(
+        controller => 'cocktails',
+        action     => 'mixer'
+    );
+    $r->any('/cocktail/create')->name('createcocktail')->to('cocktails#create');
 
 }
 
