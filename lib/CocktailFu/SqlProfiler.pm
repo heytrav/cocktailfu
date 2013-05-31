@@ -13,8 +13,8 @@ sub query_start {
     my $sql    = shift;
     my @params = @_;
     my $params = join ', ' => @params;
-    $sql =~ s/((?:(?: LEFT|INNER )\s+)?JOIN)/\n    $1/xgi;
-    $sql =~ s/(SELECT|WHERE|FROM|(?: GROUP | ORDER )\s+BY)\s+/$1\n    /xgi;
+    $sql =~ s/( (?:(?: LEFT|INNER )\s+)?JOIN)/\n    $1/xgi;
+    $sql =~ s/(SELECT|WHERE|FROM|(?:INSERT INTO)|(?: GROUP | ORDER )\s+BY)\s+/$1\n    /xgi;
     $sql =~ s/(FROM|WHERE|ORDER|LIMIT|OFFSET|GROUP|HAVING)/\n$1/xgi;
     $sql =~ s/(,|AND)\s/$1\n    /xgi;
     $self->print( "\nExecuting:\n$sql\nParameters:\t" . $params . "\n" );

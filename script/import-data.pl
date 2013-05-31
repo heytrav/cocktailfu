@@ -82,8 +82,8 @@ foreach my $recipe_file (@alcohol_files) {    ### importing===[%]     done
 
             if ( $quantity and $ingredient ) {
 
-                my $clean_ingredient = cleanse_name($ingredient);
-                next if $unique_beverage_ingredients->{$clean_ingredient}++;
+                my $ingredient_key = cleanse_name($ingredient);
+                next if $unique_beverage_ingredients->{$ingredient_key}++;
 
                 my ($raw_measure) = $quantity =~ /($re)/;
                 $quantity =~ s/\s*$re\s*//g;
@@ -93,7 +93,7 @@ foreach my $recipe_file (@alcohol_files) {    ### importing===[%]     done
                 $beverage_in_db->add_to_recipes(
                     {
                         ingredient => {
-                            name        => $clean_ingredient,
+                            name        => $ingredient_key,
                             description => $ingredient
                         },
                         measurement => {
