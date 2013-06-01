@@ -1,0 +1,24 @@
+                                                                                                                                                        
+                           A Cocktail Recipe App                            
+                                                                                                                                                        
+                                                                                                                                                        
+    +------------+         +-------------+                                  
+    | beverages  |         | recipes     |      +-------------+             
+    |------------|         |-------------|      | ingredients |             
+    | id         |<-------+| beverage    |      |-------------|             
+    | name       |         | ingredient  |<-----| id          |             
+    | description|       +>| measurement |      | name        |             
+    |            |       | | quantity    |      | description |             
+    +------------+       | +-------------+      +-------------+             
+          ^              |                                                  
+          |              |  +-------------+                                 
+          +              |  | measurements|                                 
+    +-------------+      |  |-------------|                                 
+    | instructions|      +-+| id          |                                 
+    |-------------|         | name        |                                 
+    | id          |         | unit        |                                 
+    | beverage    |         +-------------+                                 
+    | instruction |                                                         
+    +-------------+                                                         
+                                                                            
+                                                                            

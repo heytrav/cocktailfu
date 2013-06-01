@@ -1,0 +1,98 @@
+=title   {{DBIx::Class}}
+
+
+
+=break
+
+
+
+A Cocktail Recipe App
+
+=animation
+ +------------+
+ | beverages  |
+ |------------|
+ | id         |
+ | name       |
+ | description|
+ |            |
+ +------------+
+ 
+ 
+ 
+ 
+ 
+ 
+                      
+                      
+                      
+=animation
+ +------------+         +-------------+
+ | beverages  |         | recipes     |
+ |------------|         |-------------|
+ | id         |<-------+| beverage    |
+ | name       |         | ingredient  |
+ | description|         | measurement |
+ |            |         | quantity    |
+ +------------+         +-------------+
+
+
+                      
+                      
+                      
+=animation
+ +------------+         +-------------+      
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |<-------+| beverage    |      |-------------|
+ | name       |         | ingredient  |<-----| id          |
+ | description|         | measurement |      | name        |
+ |            |         | quantity    |      | description |
+ +------------+         +-------------+      +-------------+
+                      
+                      
+                      
+=animation
+ +------------+         +-------------+      
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |<-------+| beverage    |      |-------------|
+ | name       |         | ingredient  |<-----| id          |
+ | description|       +>| measurement |      | name        |
+ |            |       | | quantity    |      | description |
+ +------------+       | +-------------+      +-------------+
+                      |
+                      |  +-------------+  
+                      |  | measurements|  
+                      |  |-------------|  
+                      +-+| id          |  
+                         | name        |  
+                         | unit        |  
+                         +-------------+  
+                      
+                      
+                      
+                      
+                      
+=animation
+ +------------+         +-------------+      
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |<-------+| beverage    |      |-------------|
+ | name       |         | ingredient  |<-----| id          |
+ | description|       +>| measurement |      | name        |
+ |            |       | | quantity    |      | description |
+ +------------+       | +-------------+      +-------------+
+       ^              |
+       |              |  +-------------+  
+       +              |  | measurements|  
+ +-------------+      |  |-------------|  
+ | instructions|      +-+| id          |  
+ |-------------|         | name        |  
+ | id          |         | unit        |  
+ | beverage    |         +-------------+  
+ | instruction |
+ +-------------+      
+                      
+                      
+                      
