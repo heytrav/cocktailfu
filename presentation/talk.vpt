@@ -13,8 +13,6 @@ A Cocktail Recipe App
 
 
 * Recipes parsed from web.
-
-
 * Example:
 
     title: 'Zombie #1'
@@ -115,7 +113,7 @@ Database Schema
 
 =section #. Setting up {{DBIx::Class}}
 
-Defining relations
+Defining table relations
 
  package CocktailFu::Schema::Result::Beverage;
 
@@ -140,7 +138,39 @@ Defining relations
 
 
 
-Relationships between tables
+=section #. Modeling relationships between tables
+
+
+The {{has_one}} relationship
+
+=autopause
+
+* Use {{has_one}} when there is 1:1 relation between two tables.
+
+* **Other** table has primary key of **this** table in one of its
+     columns
+
+ +------------+         +--------------+ 
+ | beverages  |         | instructions |
+ |------------|         |--------------|
+ | **id**         |--------1| id           |
+ | name       |         | **beverage**     |
+ | description|         | instruction  |
+ |            |         +--------------+
+ +------------+         
+
+
+=break
+
+ package CocktailFu::Schema::Result::Beverage;
+ #..
+    __PACKAGE__->**has_one**(
+        instruction => Instruction => { 
+            'foreign.beverage' => 'self.id' } 
+       );
+
+
+The {{has_many}} relationship
 
 =autopause
 
@@ -150,7 +180,6 @@ Relationships between tables
 * beverages {{has_many}} recipes
 * ingredients {{has_many}} recipes
 * measurements {{has_many}} recipes
-
 
   **has_many**          
  +------------+         +-------------+      **has_many**
@@ -163,6 +192,7 @@ Relationships between tables
  +------------+         +-------------+      +-------------+
 
 =break
+
  package CocktailFu::Schema::Result::Beverage;
  ...
  __PACKAGE__->**has_many**(
@@ -182,18 +212,16 @@ Relationships between tables
  ...
  __PACKAGE__->**has_many**(
          recipes => Recipe => {
-         'foreign.measurement' => 'self.id'
-     } );
+         'foreign.measurement' => 'self.id' } );
 
-=break
+
+The {{belongs_to}} relationship
+
+=autopause
 
 * Use {{belongs_to}} to reference foreign key table.
-
-=pause
-
 * recipes {{belongs_to}} beverages, ingredients, measurements
 
-=pause
                         **belongs_to**
  +------------+         +-------------+
  | beverages  |         | recipes     |      +-------------+
@@ -224,16 +252,73 @@ Relationships between tables
          => { 'foreign.id' => 'self.measurement' } );
 
 
+The {{many_to_many}} relationship
 
-Meta stuff
+*  combines {{has_many}} and {{belongs_to}}
+
+    
+         _________________**many_to_many**__________
+        /                                       \
+ +------------+         +-------------+         |
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
+ | description|         | measurement |      | name        |
+ |            |         | quantity    |      | description |
+ +------------+         +-------------+      +-------------+
+
+
+=break
+
+ package CocktailFu::Schema::Result::Beverage;
+ #..
+
+ __PACKAGE__->many_to_many( ingredients => recipes => 'ingredient' );
+
+
+Resolving DBIC relationships
 
 =autopause
 
-* Use relation names to traverse relations
+* Row level: {{has_one}}, {{belongs_to}} 
 
- $beverage->recipes->first->ingredient->description;
+ my $instruction = $beverage->instruction;
+ say $instruction->instruction;
 
-* {{has_many}} creates implicit methods
-    - add_to_<relation>
+* ResultSet level: {{has_many}}, {{many_to_many}} 
 
- $beverages->add_to_recipes
+ my $recipes = $beverage->recipes; 
+
+ while (my $recipe = $recipes->next){
+    say $recipe->ingredient->description;
+    say $recipe->measurement->unit;
+ }
+
+
+Inserting Data
+
+=autopause
+
+* Create a row
+
+ my $beverage = $dbic->resultset('Beverage')->create({
+        name => 'mojito',
+        description => 'Mojito'
+    });
+
+* Use {{has_one}} to create beverage **and** add instruction  
+
+ my $beverage = $beverage_rs->create(
+     {
+         name        => 'zombie',
+         description => 'Zombie',
+         'instruction.instruction' => qq{Shake over ice in ..
+     },
+     { join => 'instruction' }
+ );
+
+
+
+
+
