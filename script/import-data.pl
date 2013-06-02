@@ -60,13 +60,16 @@ foreach my $recipe_file (@alcohol_files) {    ### importing===[%]     done
         my $beverage_in_db = $beverage_rs->create(
             {
                 name        => $beverage_name,
-                description => $recipe->{title}
+                description => $recipe->{title},
+                'instruction.instruction' => $recipe->{instructions}
+            },
+            {
+                join => 'instruction'
             }
         );
 
         # Add instruction
-        $beverage_in_db->add_to_instructions(
-            { instruction => $recipe->{instructions} } );
+
 
         my $unique_beverage_ingredients;
         foreach my $ingredient_raw ( @{$ingredients} ) {
