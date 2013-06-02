@@ -11,9 +11,11 @@ __PACKAGE__->add_unique_constraint([qw/name/]);
 
 __PACKAGE__->has_many(
     recipes => 'Recipe' => { 'foreign.beverage' => 'self.id' } );
-__PACKAGE__->many_to_many( ingredients => recipes => 'ingredient' );
-__PACKAGE__->has_many(
+
+__PACKAGE__->has_one(
     instructions => Instruction => { 'foreign.beverage' => 'self.id' } );
+
+__PACKAGE__->many_to_many( ingredients => recipes => 'ingredient' );
 
 1;
 

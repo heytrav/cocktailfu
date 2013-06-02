@@ -10,7 +10,9 @@ __PACKAGE__->add_unique_constraint([qw/name/]);
 
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->has_many(
-    recipes => Recipe => { 'foreign.measurement' => 'self.id' } );
+        recipes => Recipe => {
+        'foreign.measurement' => 'self.id'
+    } );
 
 1;
 

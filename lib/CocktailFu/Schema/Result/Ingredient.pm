@@ -12,7 +12,8 @@ __PACKAGE__->add_unique_constraint([qw/name/]);
 
 
 __PACKAGE__->has_many(
-    recipes => Recipe => { 'foreign.ingredient' => 'self.id' } );
+    recipes => Recipe => {
+    'foreign.ingredient' => 'self.id' } );
 
 __PACKAGE__->many_to_many( beverages => recipes => 'beverage' );
 

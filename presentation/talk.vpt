@@ -5,8 +5,34 @@
 =break
 
 
+=section #. Idea for an app
 
 A Cocktail Recipe App
+
+=autopause
+
+
+* Recipes parsed from web.
+
+
+* Example:
+
+    title: 'Zombie #1'
+    - ingredients:
+        - 1 1/4 oz Lemon juice
+        - 2 dashes Grenadine
+        - 3/4 oz blood Orange juice
+        - 3/4 oz Cherry Heering
+        - 3/4 oz White rum
+        - 2 oz Dark rum
+        - 3/4 oz dark 151 proof rum
+    instructions: 'Shake over ice in a shaker,
+                  and strain into a large highball 
+                  glass over crushed ice.'
+
+
+
+Database Schema
 
 =animation
  +------------+
@@ -18,19 +44,13 @@ A Cocktail Recipe App
  |            |
  +------------+
  
- 
- 
- 
- 
- 
-                      
                       
                       
 =animation
  +------------+         +-------------+
  | beverages  |         | recipes     |
  |------------|         |-------------|
- | id         |<-------+| beverage    |
+ | id         |--------<| beverage    |
  | name       |         | ingredient  |
  | description|         | measurement |
  |            |         | quantity    |
@@ -44,8 +64,8 @@ A Cocktail Recipe App
  +------------+         +-------------+      
  | beverages  |         | recipes     |      +-------------+
  |------------|         |-------------|      | ingredients |
- | id         |<-------+| beverage    |      |-------------|
- | name       |         | ingredient  |<-----| id          |
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
  | description|         | measurement |      | name        |
  |            |         | quantity    |      | description |
  +------------+         +-------------+      +-------------+
@@ -53,46 +73,167 @@ A Cocktail Recipe App
                       
                       
 =animation
+                      
  +------------+         +-------------+      
  | beverages  |         | recipes     |      +-------------+
  |------------|         |-------------|      | ingredients |
- | id         |<-------+| beverage    |      |-------------|
- | name       |         | ingredient  |<-----| id          |
- | description|       +>| measurement |      | name        |
- |            |       | | quantity    |      | description |
- +------------+       | +-------------+      +-------------+
-                      |
-                      |  +-------------+  
-                      |  | measurements|  
-                      |  |-------------|  
-                      +-+| id          |  
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
+ | description|    +---<| measurement |      | name        |
+ |            |    |    | quantity    |      | description |
+ +------------+    |    +-------------+      +-------------+
+                   |   
+                   |     +-------------+  
+                   |     | measurements|  
+                   |     |-------------|  
+                   +-----| id          |  
                          | name        |  
                          | unit        |  
                          +-------------+  
-                      
-                      
-                      
-                      
-                      
+                   
+                     
 =animation
  +------------+         +-------------+      
  | beverages  |         | recipes     |      +-------------+
  |------------|         |-------------|      | ingredients |
- | id         |<-------+| beverage    |      |-------------|
- | name       |         | ingredient  |<-----| id          |
- | description|       +>| measurement |      | name        |
- |            |       | | quantity    |      | description |
- +------------+       | +-------------+      +-------------+
-       ^              |
-       |              |  +-------------+  
-       +              |  | measurements|  
- +-------------+      |  |-------------|  
- | instructions|      +-+| id          |  
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
+ | description|    +---<| measurement |      | name        |
+ |            |    |    | quantity    |      | description |
+ +------------+    |    +-------------+      +-------------+
+       |           |   
+       |           |     +-------------+  
+       1           |     | measurements|  
+ +-------------+   |     |-------------|  
+ | instructions|   +-----| id          |  
  |-------------|         | name        |  
  | id          |         | unit        |  
  | beverage    |         +-------------+  
  | instruction |
  +-------------+      
                       
-                      
-                      
+
+=section #. Setting up {{DBIx::Class}}
+
+Defining relations
+
+ package CocktailFu::Schema::Result::Beverage;
+
+ #..
+ __PACKAGE__->table('**beverages**');
+ __PACKAGE__->add_columns(qw/**id name description**/);
+ __PACKAGE__->set_primary_key('**id**');
+ __PACKAGE__->add_unique_constraint([qw/**name**/]);
+
+=break
+
+ package CocktailFu::Schema::Result::Recipe;
+
+ #..
+
+ __PACKAGE__->table('**recipes**');
+ __PACKAGE__->add_columns(
+    qw/**beverage ingredient measurement quantity**/);
+ __PACKAGE__->add_unique_constraint([qw/**beverage ingredient**/]);
+
+ __PACKAGE__->set_primary_key(qw/beverage ingredient/);
+
+
+
+Relationships between tables
+
+=autopause
+
+* Use {{has_many}} when foreign table has current 
+  table's primary key.
+
+* beverages {{has_many}} recipes
+* ingredients {{has_many}} recipes
+* measurements {{has_many}} recipes
+
+
+  **has_many**          
+ +------------+         +-------------+      **has_many**
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
+ | description|         | measurement |      | name        |
+ |            |         | quantity    |      | description |
+ +------------+         +-------------+      +-------------+
+
+=break
+ package CocktailFu::Schema::Result::Beverage;
+ ...
+ __PACKAGE__->**has_many**(
+     recipes => 'Recipe' => { 
+         'foreign.beverage' => 'self.id' 
+         } 
+    );
+
+ package CocktailFu::Schema::Result::Ingredient;
+ ...
+ __PACKAGE__->**has_many**(
+     recipes => Recipe => {
+     'foreign.ingredient' => 'self.id' } );
+
+
+ package CocktailFu::Schema::Result::Measurement;
+ ...
+ __PACKAGE__->**has_many**(
+         recipes => Recipe => {
+         'foreign.measurement' => 'self.id'
+     } );
+
+=break
+
+* Use {{belongs_to}} to reference foreign key table.
+
+=pause
+
+* recipes {{belongs_to}} beverages, ingredients, measurements
+
+=pause
+                        **belongs_to**
+ +------------+         +-------------+
+ | beverages  |         | recipes     |      +-------------+
+ |------------|         |-------------|      | ingredients |
+ | id         |--------<| beverage    |      |-------------|
+ | name       |         | ingredient  |>-----| id          |
+ | description|         | measurement |      | name        |
+ |            |         | quantity    |      | description |
+ +------------+         +-------------+      +-------------+
+
+
+
+=break
+ package CocktailFu::Schema::Result::Recipe;
+ #..
+ __PACKAGE__->**belongs_to**(
+     beverage => Beverage => { 
+         'foreign.id' => 'self.beverage' 
+   } );
+
+ __PACKAGE__->**belongs_to**(
+     ingredient => 'CocktailFu::Schema::Result::Ingredient' 
+     => { 'foreign.id' => 'self.ingredient' } );
+
+ __PACKAGE__->**belongs_to**(
+     measurement 
+         => 'CocktailFu::Schema::Result::Measurement' 
+         => { 'foreign.id' => 'self.measurement' } );
+
+
+
+Meta stuff
+
+=autopause
+
+* Use relation names to traverse relations
+
+ $beverage->recipes->first->ingredient->description;
+
+* {{has_many}} creates implicit methods
+    - add_to_<relation>
+
+ $beverages->add_to_recipes
