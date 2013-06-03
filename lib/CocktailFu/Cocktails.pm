@@ -77,7 +77,7 @@ sub dbic {
             {},
             {
                 prefetch => [
-                    'instructions', { recipes => [qw/ingredient measurement/] }
+                    'instruction', { recipes => [qw/ingredient measurement/] }
                 ]
             }
         );
