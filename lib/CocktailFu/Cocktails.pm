@@ -87,7 +87,7 @@ sub dbic {
     my $recipes  = $beverage->recipes;
     my $hash     = {
         title       => $beverage->description,
-        instruction => $beverage->instructions->first->instruction,
+        instruction => $beverage->instruction->instruction,
 
     };
     while ( my $recipe = $recipes->next ) {
