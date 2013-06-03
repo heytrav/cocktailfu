@@ -188,39 +188,55 @@ Defining table relations
 
 
 
+=section  #. Using the DBIC model
 
-=section #. Modeling relationships between tables
 
-
-The {{has_one}} relationship
+Get at the data in the model
 
 =autopause
 
-* **Other** table has primary key of **this** table in one of its
-     columns
+* Initialise the model
 
-    **has_one**                   +--------------+      
- +----------------+           | instructions |      
- | beverages      |           |--------------|      
- |----------------|           | id           |      
- | **beverage_id**    |----------1| **beverage_id**  |
- | name           |           | instruction  |      
- | description    |           +--------------+      
- |                |         
- +----------------+         
+ my $dbic = CocktailFu::Schema->connect($dsn,$user,$password);
+
+* Get reference to a {{ResultSet}} (i.e. {{table}})
+
+ my $beverages_rs = $dbic->resultset('Beverage');
+
+* Search table
+
+ my $subset_rs = $beverage_rs->search(
+        {description => {ilike => '%Martini%'}});
+
+* Search the result of previous search
+
+ my $vespers_martini = $subset_rs->find({name => 'vespers-martini'});
 
 
-* Use {{has_one}} when there is 1:1 relation between two tables.
+Usual CRUD
+
+=autopause
+
+* Create a row
+
+ my $beverage = $dbic->resultset('Beverage')->create(
+     {
+         name        => 'mojito',
+         description => 'Mojito'
+     }
+ );
+
+* Update a row
+    
+ $beverage->update({name => 'b-52', description => 'B-52'});
+
+* Delete
+
+ $beverage->delete;
 
 
-=break
 
- package CocktailFu::Schema::Result::Beverage;
- #..
- __PACKAGE__->**has_one**(
-        instruction => Instruction => 
-            { 'foreign.beverage_id' => 'self.beverage_id' } 
-       );
+=section #. Modeling relationships between tables
 
 
 
@@ -247,7 +263,6 @@ The {{has_many}} relationship
  |              |         | quantity        |      | description   |
  +--------------+         +-----------------+      +---------------+
                          
-                          
 
 =break
 
@@ -256,56 +271,20 @@ The {{has_many}} relationship
  ...
  __PACKAGE__->**has_many**(
      recipes => 'Recipe' => { 
-         'foreign.beverage' => 'self.id' } );
+         'foreign.beverage_id' => 'self.beverage_id' } );
 
  package CocktailFu::Schema::Result::Ingredient;
  ...
  __PACKAGE__->**has_many**(
      recipes => Recipe => {
-     'foreign.ingredient' => 'self.id' } );
+     'foreign.ingredient_id' => 'self.ingredient_id' } );
 
 
  package CocktailFu::Schema::Result::Measurement;
  ...
  __PACKAGE__->**has_many**(
          recipes => Recipe => {
-         'foreign.measurement' => 'self.id' } );
-
-
-The {{belongs_to}} relationship
-
-=autopause
-
-* Use {{belongs_to}} to reference foreign key table.
-* recipes {{belongs_to}} beverages, ingredients, measurements
-
-                           **belongs_to**
- +--------------+         +-----------------+      
- | beverages    |         | recipes         |      +---------------+
- |--------------|         |-----------------|      | ingredients   |
- | beverage_id  |--------<| beverage_id     |      |---------------|
- | name         |         | ingredient_id   |>-----| ingredient_id |
- | description  |         | measurement_id  |      | name          |
- |              |         | quantity        |      | description   |
- +--------------+         +-----------------+      +---------------+
-                          
-
-
-=break
- package CocktailFu::Schema::Result::Recipe;
- #..
- __PACKAGE__->**belongs_to**(
-     beverage => Beverage => 
-     { 'foreign.id' => 'self.beverage' } );
-
- __PACKAGE__->**belongs_to**(
-     ingredient => 'CocktailFu::Schema::Result::Ingredient' 
-     => { 'foreign.id' => 'self.ingredient' } );
-
- __PACKAGE__->**belongs_to**(
-     measurement 
-         => 'CocktailFu::Schema::Result::Measurement' 
-         => { 'foreign.id' => 'self.measurement' } );
+         'foreign.measurement_id' => 'self.measurement_id' } );
 
 
 The {{many_to_many}} relationship
@@ -325,6 +304,7 @@ The {{many_to_many}} relationship
  +--------------+         +-----------------+      +---------------+
                           
 
+
 =break
 
  package CocktailFu::Schema::Result::Beverage;
@@ -333,61 +313,10 @@ The {{many_to_many}} relationship
  __PACKAGE__->**many_to_many**( ingredients => recipes => 'ingredient' );
 
 
-=section  #. Using the DBIC model
 
-
-Get at the data in the model
+Using {{has_many}} and {{many_to_many}}
 
 =autopause
-
-* Initialise the model
-
- my $dbic = CocktailFu::Schema->connect($dsn,$user,$password);
-
-* Get reference to a {{ResultSet}} (i.e. {{table}})
-
- my $beverages_rs = $dbic->resultset('Beverage');
-
-* Search table
-
- my $subset_rs = $beverage_rs->search(
-        {description => {ilike => '%Martini%'}});
-
-* Search that {{ResultSet}}  
-
- my $vespers_martini = $subset_rs->find({name => 'vespers-martini'});
-
-
-Usual CRUD
-
-=autopause
-
-* Create a row
-
- my $beverage = $dbic->resultset('Beverage')->create(
-     {
-         name        => 'mojito',
-         description => 'Mojito'
-     }
- );
-
-* Update a row
-
- $beverage->description('B-52');
- $beverage->update;
-
-* Delete
-
- $beverage->delete;
-
-
-=section #. Using the DBIC relationships
-
-ResultSet level
-
-=autopause
-
-* Return {{ResultSet}} objects representing sets of rows
 
 *  {{has_many}} relations
 
@@ -407,18 +336,89 @@ ResultSet level
  }
 
 
+* Both return {{ResultSet}} objects representing sets of rows
 
-Row level queries
+
+
+The {{belongs_to}} relationship
+
+
+=autopause
+
+* Use {{belongs_to}} to reference foreign key table.
+
+* recipes {{belongs_to}} beverages, ingredients, measurements
+
+                           **belongs_to**
+ +--------------+         +-----------------+      
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                          
+
+
+=break
+ package CocktailFu::Schema::Result::Recipe;
+ #..
+ __PACKAGE__->**belongs_to**(
+     beverage => Beverage => 
+     { 'foreign.beverage_id' => 'self.beverage_id' } );
+
+ __PACKAGE__->**belongs_to**(
+     ingredient => 'CocktailFu::Schema::Result::Ingredient' 
+     => { 'foreign.ingredient_id' => 'self.ingredient_id' } );
+
+ __PACKAGE__->**belongs_to**(
+     measurement 
+         => 'CocktailFu::Schema::Result::Measurement' 
+         => { 'foreign.measurement_id' => 'self.measurement_id' } );
+
+
+
+The {{has_one}} relationship
+
+=autopause
+
+* **Other** table has primary key of **this** table in one of its
+  columns
+
+    **has_one**                   +--------------+      
+ +----------------+           | instructions |      
+ | beverages      |           |--------------|      
+ |----------------|           | id           |      
+ | **beverage_id**    |----------1| **beverage_id**  |
+ | name           |           | instruction  |      
+ | description    |           +--------------+      
+ |                |         
+ +----------------+         
+
+* Use {{has_one}} when there is 1:1 relation between two tables.
+
+
+=break
+
+ package CocktailFu::Schema::Result::Beverage;
+ #..
+ __PACKAGE__->**has_one**(
+        instruction => Instruction => 
+            { 'foreign.beverage_id' => 'self.beverage_id' } 
+       );
+
+
+Using {{has_one}} and {{belongs_to}}
 
 =autopause
 
 * Return object that represents a {{row}} in the db.
 
-* {{has_one}}, {{belongs_to}} 
-
 
  my $ingredient = $recipe->ingredient;
  say $ingredient->description;
+
 
 
 
@@ -439,6 +439,7 @@ Inserting the data
         - 1 Lemon Peel
     instructions: 'Shaken, not stirred'
 
+=break
 
 * Insert {{beverage}}
 
@@ -449,20 +450,19 @@ Inserting the data
      }
  );
 
-=break
 
 * Insert {{instruction }} 
 
  my $instruction = $dbic->resultset('Instruction')->create(
     { 
-        beverage_id => $beverage->id,
+        beverage_id => $beverage->beverage_id,
         instruction => 'Shaken, not stirred...' 
     }
  );
  
 =break
 
-* or, insert beverage and instruction using {{has_one}}
+* or use {{has_one}} to insert beverage and instruction in one go
 
  my $beverage = $beverage_rs->create(
      {
@@ -486,6 +486,8 @@ Inserting the data
 
 Create a row in {{recipes}}
 
+=autopause
+
 * Insert {{ingredient}}
 
  my $ingredient = $dbic->resultset('Ingredient')->create(
@@ -497,20 +499,23 @@ Create a row in {{recipes}}
  my $measurement = $dbic->resultset('Measurement')
     ->create( { unit => 'cl' } );
 
-* Insert {{recipe}} using above
+* Insert {{recipe}} using {{beverage}}, {{ingredient}} & {{measurement}}
 
  my $recipe = $dbic->resultset('Recipe')->create(
      {
-         beverage    => $beverage->id,
-         ingredient  => $ingredient->id,
-         measurement => $measurement->id,
+         beverage    => $beverage->beverage_id,
+         ingredient  => $ingredient->ingredient_id,
+         measurement => $measurement->measurement_id,
          quantity    => '1' });
 
 
 =break
 
+=autopause
 
-* Alternatively, do everything at once
+* {{has_many}} relation creates implicit add_to_{{relationship}}
+
+* Insert everything at once
 
  my $recipe = $beverage->**add_to_recipes**(
      {
@@ -524,7 +529,210 @@ Create a row in {{recipes}}
      { join => { recipes => [qw/ingredient measurement/] } }
  );
 
-* {{has_many}} relation creates implicit add_to_{{relationship}}
-
 * {{ingredient}}, {{measurement}} created if they do not exist
   and used to create new recipe with correct {{beverage}}.
+
+
+=section #. Queries, etc.
+
+
+Fetching cocktails using DBI 
+
+* Naïve method
+
+
+=example
+
+    my $select_beverages = qq{
+        SELECT
+            me.id,
+            me.name,
+            me.description
+        FROM
+            beverages me
+        WHERE ( me.name = ? )
+    };
+
+    my $beverage_stmt  = $dbh->prepare($select_beverages);
+    my $select_recipes = qq{
+        SELECT
+            me.beverage,
+            me.ingredient,
+            me.measurement,
+            me.quantity
+        FROM
+            recipes me
+        WHERE
+            ( me.beverage = ? )
+        };
+    my $recipe_stmt        = $dbh->prepare($select_recipes);
+    my $select_ingredients = qq{
+        SELECT
+            me.id,
+            me.name,
+            me.description
+        FROM
+            ingredients me
+        WHERE
+            ( me.id = ? )
+        };
+    my $ingredient_stmt = $dbh->prepare($select_ingredients);
+
+    my $select_measurement = qq{
+            SELECT
+                me.id,
+                me.name,
+                me.unit
+            FROM
+                measurements me
+            WHERE
+                ( me.id = ? )
+        };
+    my $measurement_stmt   = $dbh->prepare($select_measurement);
+    my $select_instruction = qq{
+            SELECT
+                me.id,
+                me.beverage,
+                me.instruction
+            FROM
+                instructions me
+            WHERE
+                ( me.beverage = ? )
+        };
+    my $instruction_stmt = $dbh->prepare($select_instruction);
+
+    # Fetch beverage from db
+    $beverage_stmt->execute($beverage_name);
+    $self->app->log->debug($select_beverages);
+    my $beverage_set = $beverage_stmt->fetchall_arrayref;
+
+    if ($beverage_set) {
+
+        my $first_beverage = shift @{$beverage_set};
+        my ( $beverage_id, $beverage_description ) =
+            @{$first_beverage}[ 0, 2 ];
+
+        # fetch beverage instructions
+        $self->app->log->debug($select_instruction);
+        $instruction_stmt->execute($beverage_id);
+        my $instruct_result = $instruction_stmt->fetchrow_arrayref;
+        my $instruction     = $instruct_result->[2];
+        $result_hash->{title}       = $beverage_description;
+        $result_hash->{instruction} = $instruction;
+
+        # Fetch related recipes
+        $recipe_stmt->execute($beverage_id);
+        $self->app->log->debug($select_recipes);
+        my $recipe_set = $recipe_stmt->fetchall_arrayref;
+
+        foreach my $recipe ( @{$recipe_set} ) {
+            my ( $bev, $ingredient_id, $measurement_id, $quantity ) =
+                @{$recipe};
+
+            # Fetch ingredient
+            $self->app->log->debug($select_ingredients);
+            $ingredient_stmt->execute($ingredient_id);
+            my $ingred_result = $ingredient_stmt->fetchall_arrayref;
+            my $ingredient_description = $ingred_result->[0]->[2];
+
+            # Fetch measurement
+            $self->app->log->debug($select_measurement);
+            $measurement_stmt->execute($measurement_id);
+            my $measurement_result = $measurement_stmt->fetchall_arrayref;
+            my $measurement_unit   = $measurement_result->[0]->[2];
+            push @{ $result_hash->{ingredients} },
+                {
+                ingredient => $ingredient_description,
+                quantity   => $quantity,
+                unit       => $measurement_unit
+                };
+        }
+    }
+
+
+* better way to do it 
+
+=example
+
+
+    my $query = qq{
+        SELECT
+            me.id,
+            me.name,
+            me.description,
+            instructions.id,
+            instructions.beverage,
+            instructions.instruction,
+            recipes.beverage,
+            recipes.ingredient,
+            recipes.measurement,
+            recipes.quantity,
+            ingredient.id,
+            ingredient.name,
+            ingredient.description,
+            measurement.id,
+            measurement.name,
+            measurement.unit
+        FROM
+            beverages me
+            LEFT JOIN instructions instructions
+                ON instructions.beverage = me.id
+            LEFT JOIN recipes recipes
+                ON recipes.beverage = me.id
+            LEFT JOIN ingredients ingredient
+                ON ingredient.id = recipes.ingredient
+            LEFT JOIN measurements measurement
+                ON measurement.id = recipes.measurement
+        WHERE
+            ( me.name = ? )
+        ORDER BY
+            me.id
+
+    };
+    my $stmt = $dbh->prepare($query);
+    $self->app->log->debug($query);
+    $stmt->execute($beverage_name);
+    my $results = $stmt->fetchall_arrayref;
+    foreach my $result ( @{$results} ) {
+        my ( $beverage_name, $instruction, $quantity, $ingredient, $unit )
+            = @{$result}[ 2, 5, 9, 12, 15 ];
+        $result_hash->{title}         = $beverage_name,
+            $result_hash->{instruction} = $instruction;
+        push @{ $result_hash->{ingredients} },
+            {
+            quantity   => $quantity,
+            ingredient => $ingredient,
+            unit       => $unit
+            };
+    }
+
+
+
+Fetching cocktails using DBIC 
+
+* Naïve method (only method?)
+
+ my $beverages = $self->db->resultset('Beverage');
+
+ my $beverage = $beverages->find( { name => $beverage_name } );
+ my $recipes  = $beverage->recipes;
+ my $hash     = {
+     title       => $beverage->description,
+     instruction => $beverage->instructions->first->instruction,
+ };
+ while ( my $recipe = $recipes->next ) {
+     my $ingredient  = $recipe->ingredient;
+     my $measurement = $recipe->measurement;
+     push @{ $hash->{ingredients} },
+       {
+         quantity   => $recipe->quantity,
+         unit       => $measurement->unit,
+         ingredient => $ingredient->description,
+       };
+ }
+
+
+=break
+
+* Go to app
+
