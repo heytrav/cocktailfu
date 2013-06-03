@@ -62,7 +62,6 @@ foreach my $recipe_file (@alcohol_files) {    ### importing===[%]     done
                 name        => $beverage_name,
                 description => $recipe->{title},
                 instruction => { instruction => $recipe->{instructions} }
-                #'instruction.instruction' => $recipe->{instructions}
             },
             {
                 join => 'instruction'

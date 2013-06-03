@@ -54,7 +54,7 @@ sub recipe {
             {},
             {
                 prefetch => [
-                    'instructions', { recipes => [qw/ingredient measurement/] }
+                    'instruction', { recipes => [qw/ingredient measurement/] }
                 ]
             }
         );

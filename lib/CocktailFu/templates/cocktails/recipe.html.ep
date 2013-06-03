@@ -1,7 +1,6 @@
 % layout 'default';
 % title $beverage->description.' recipe';
 
-  % my $instructions = $beverage->instructions;
 <h1><%= $beverage->description %></h1>
 <ul>
     % while (my $recipe = $recipes->next) {
@@ -14,7 +13,5 @@
         </li>
 
     %    }
-    % while (my $instruction = $instructions->next) {
-        <li><%= $instruction->instruction %></li>
-    %  }
+     <li><%= $beverage->instruction->instruction %></li>
 </ul>

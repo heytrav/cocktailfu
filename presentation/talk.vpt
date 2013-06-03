@@ -468,7 +468,9 @@ Inserting the data
      {
          name        => 'vesper-martini',
          description => 'Vesper Martini',
-         'instruction.instruction' => 'Shaken, not stirred...'
+         instruction => { 
+            instruction => 'Shaken, not stirred..' 
+         }
      },
      { join => 'instruction' }
  );
@@ -529,132 +531,31 @@ Create a row in {{recipes}}
      { join => { recipes => [qw/ingredient measurement/] } }
  );
 
+
 * {{ingredient}}, {{measurement}} created if they do not exist
   and used to create new recipe with correct {{beverage}}.
 
 
-=section #. Queries, etc.
+
+=section #. More complicated queries
 
 
-Fetching cocktails using DBI 
-
-* Naïve method
+joins, {{order by}}, {{group by}} 
 
 
-=example
+* DBIC query
 
-    # Fetch beverage from db
-    my $beverage_stmt  = $dbh->prepare(
-        qq{ SELECT me.id, me.name, me.description
-            FROM beverages me WHERE ( me.name = ? ) }
-    );
-    $beverage_stmt->execute($beverage_name);
-    my $beverage_set = $beverage_stmt->fetchall_arrayref;
-
-    if ($beverage_set) {
-
-        my $first_beverage = shift @{$beverage_set};
-        my ( $beverage_id, $beverage_description ) =
-            @{$first_beverage}[ 0, 2 ];
-
-        # fetch beverage instructions
-        my $instruction_stmt = $dbh->prepare( qq{
-                SELECT me.id, me.beverage, me.instruction
-                FROM instructions me WHERE ( me.beverage = ? ) }
-        );
-        $instruction_stmt->execute($beverage_id);
-        my $instruct_result = $instruction_stmt->fetchrow_arrayref;
-        my $instruction     = $instruct_result->[2];
-        $result_hash->{title}       = $beverage_description;
-        $result_hash->{instruction} = $instruction;
-
-        # Fetch related recipes
-        my $recipe_stmt        = $dbh->prepare(
-        qq{ SELECT me.beverage, me.ingredient, me.measurement, me.quantity
-            FROM recipes me WHERE ( me.beverage = ? ) });
-        $recipe_stmt->execute($beverage_id);
-        my $recipe_set = $recipe_stmt->fetchall_arrayref;
-
-        foreach my $recipe ( @{$recipe_set} ) {
-            my ( $bev, $ingredient_id, $measurement_id, $quantity ) =
-                @{$recipe};
-
-            # Fetch ingredient
-            my $ingredient_stmt = $dbh->prepare(
-            qq{ SELECT me.id, me.name, me.description FROM ingredients me 
-            WHERE ( me.id = ? ) });
-
-            $ingredient_stmt->execute($ingredient_id);
-            my $ingred_result = $ingredient_stmt->fetchall_arrayref;
-            my $ingredient_description = $ingred_result->[0]->[2];
-
-            # Fetch measurement
-            my $measurement_stmt   = $dbh->prepare( qq{
-                    SELECT me.id, me.name, me.unit FROM measurements me 
-                    WHERE ( me.id = ? )
-                }
-            );
-            $measurement_stmt->execute($measurement_id);
-            my $measurement_result = $measurement_stmt->fetchall_arrayref;
-            my $measurement_unit   = $measurement_result->[0]->[2];
-
-            # do something with data
-        }
+ my $filtered_beverages  = $beverage_rs->search(
+    {'ingredient.name' => 'vodka'},
+    { 
+        join => {recipes => 'ingredient'},
+        order_by => {-asc => [qw/ingredient.name/]}
     }
-
-
-* Do it all in one query
-
-
-=example
-
-
-    my $stmt = $dbh->prepare( qq{
-        SELECT
-            me.id,
-            me.name,
-            me.description,
-            instructions.id,
-            instructions.beverage,
-            instructions.instruction,
-            recipes.beverage,
-            recipes.ingredient,
-            recipes.measurement,
-            recipes.quantity,
-            ingredient.id,
-            ingredient.name,
-            ingredient.description,
-            measurement.id,
-            measurement.name,
-            measurement.unit
-        FROM
-            beverages me
-            LEFT JOIN instructions instructions
-                ON instructions.beverage = me.id
-            LEFT JOIN recipes recipes
-                ON recipes.beverage = me.id
-            LEFT JOIN ingredients ingredient
-                ON ingredient.id = recipes.ingredient
-            LEFT JOIN measurements measurement
-                ON measurement.id = recipes.measurement
-        WHERE
-            ( me.name = ? )
-        ORDER BY
-            me.id }
-    );
-    $stmt->execute('vespers-martini');
-    my $results = $stmt->fetchall_arrayref;
-    foreach my $result ( @{$results} ) {
-        my ( $beverage_name, $instruction, $quantity, $ingredient, $unit )
-            = @{$result}[ 2, 5, 9, 12, 15 ];
-        # do stuff with data
-    }
+ );
 
 
 
-Fetching cocktails using DBIC 
-
-* Naïve method (only method?)
+* Basic recipe query
 
  my $beverages = $self->db->resultset('Beverage');
 
@@ -668,7 +569,11 @@ Fetching cocktails using DBIC
  }
 
 
+
 =break
 
 * Go to app
+
+
+
 
