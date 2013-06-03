@@ -7,12 +7,11 @@
 
 =section #. Idea for an app
 
-A Cocktail Recipe App
+A Cocktail Recipe Database
 
 =autopause
 
 
-* Recipes parsed from web.
 * Example:
 
     title: 'Zombie #1'
@@ -28,113 +27,165 @@ A Cocktail Recipe App
                   and strain into a large highball 
                   glass over crushed ice.'
 
+* {{beverage}} will have {{recipe}} consisting of set of
+  {{ingredients}} with {{measurement}} and quantity. 
 
 
 Database Schema
 
 =animation
- +------------+
- | beverages  |
- |------------|
- | id         |
- | name       |
- | description|
- |            |
- +------------+
- 
                       
                       
-=animation
- +------------+         +-------------+
- | beverages  |         | recipes     |
- |------------|         |-------------|
- | id         |--------<| beverage    |
- | name       |         | ingredient  |
- | description|         | measurement |
- |            |         | quantity    |
- +------------+         +-------------+
+ +--------------+
+ | beverages    |
+ |--------------|
+ | beverage_id  |
+ | name         |
+ | description  |
+ |              |
+ +--------------+
 
 
-                      
-                      
-                      
 =animation
- +------------+         +-------------+      
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|         | measurement |      | name        |
- |            |         | quantity    |      | description |
- +------------+         +-------------+      +-------------+
+
                       
-                      
-                      
+ +--------------+
+ | beverages    |
+ |--------------|
+ | beverage_id  |
+ | name         |
+ | description  |
+ |              |
+ +--------------+
+       |         
+       |                                       
+       1                                       
+ +-------------+
+ | instructions|
+ |-------------|
+ | id          |
+ | beverage_id |
+ | instruction |
+ +-------------+
+                
+
 =animation
+
                       
- +------------+         +-------------+      
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|    +---<| measurement |      | name        |
- |            |    |    | quantity    |      | description |
- +------------+    |    +-------------+      +-------------+
-                   |   
-                   |     +-------------+  
-                   |     | measurements|  
-                   |     |-------------|  
-                   +-----| id          |  
-                         | name        |  
-                         | unit        |  
-                         +-------------+  
-                   
-                     
-=animation
- +------------+         +-------------+      
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|    +---<| measurement |      | name        |
- |            |    |    | quantity    |      | description |
- +------------+    |    +-------------+      +-------------+
-       |           |   
-       |           |     +-------------+  
-       1           |     | measurements|  
- +-------------+   |     |-------------|  
- | instructions|   +-----| id          |  
- |-------------|         | name        |  
- | id          |         | unit        |  
- | beverage    |         +-------------+  
+ +--------------+                                  
+ | beverages    |                                  +---------------+
+ |--------------|                                  | ingredients   |
+ | beverage_id  |                                  |---------------|
+ | name         |                                  | ingredient_id |
+ | description  |                                  | name          |
+ |              |                                  | description   |
+ +--------------+                                  +---------------+
+       |                                           
+       |                                       
+       1                                       
+ +-------------+                               
+ | instructions|                               
+ |-------------|                               
+ | id          |                               
+ | beverage_id |                               
  | instruction |
  +-------------+      
                       
 
+=animation
+                      
+ +--------------+                                  
+ | beverages    |                                  +---------------+
+ |--------------|                                  | ingredients   |
+ | beverage_id  |                                  |---------------|
+ | name         |                                  | ingredient_id |
+ | description  |                                  | name          |
+ |              |                                  | description   |
+ +--------------+                                  +---------------+
+       |                                           
+       |                   +----------------+  
+       1                   | measurements   |  
+ +-------------+           |----------------|  
+ | instructions|           | measurement_id |  
+ |-------------|           | name           |  
+ | id          |           | unit           |  
+ | beverage_id |           +----------------+  
+ | instruction |
+ +-------------+      
+                      
+
+=animation
+ +--------------+         +-----------------+      
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |    +---<| measurement_id  |      | name          |
+ |              |    |    | quantity        |      | description   |
+ +--------------+    |    +-----------------+      +---------------+
+       |             |   
+       |             |     +----------------+  
+       1             |     | measurements   |  
+ +-------------+     |     |----------------|  
+ | instructions|     +-----| measurement_id |  
+ |-------------|           | name           |  
+ | id          |           | unit           |  
+ | beverage_id |           +----------------+  
+ | instruction |
+ +-------------+      
+                      
+                      
+
 =section #. Setting up {{DBIx::Class}}
+
+
 
 Defining table relations
 
+=autopause
+* Modules (i.e. {{.pm}} files) represent {{table}} definitions
+
  package CocktailFu::Schema::Result::Beverage;
 
- #..
+ use Moose;
+ use namespace::autoclean;
+ BEGIN { extends 'DBIx::Class::Core' }
+
  __PACKAGE__->table('**beverages**');
- __PACKAGE__->add_columns(qw/**id name description**/);
- __PACKAGE__->set_primary_key('**id**');
+ __PACKAGE__->add_columns(qw/**beverage_id name description**/);
+ __PACKAGE__->set_primary_key('**beverage_id**');
  __PACKAGE__->add_unique_constraint([qw/**name**/]);
 
 =break
 
  package CocktailFu::Schema::Result::Recipe;
 
- #..
+ use Moose;
+ use namespace::autoclean;
+ BEGIN { extends 'DBIx::Class::Core' }
 
  __PACKAGE__->table('**recipes**');
  __PACKAGE__->add_columns(
-    qw/**beverage ingredient measurement quantity**/);
- __PACKAGE__->add_unique_constraint([qw/**beverage ingredient**/]);
+    qw/**beverage_id ingredient_id measurement_id quantity**/);
+ __PACKAGE__->add_unique_constraint([qw/**beverage_id ingredient_id**/]);
 
- __PACKAGE__->set_primary_key(qw/beverage ingredient/);
+ __PACKAGE__->set_primary_key(qw/**beverage_id ingredient_id**/);
+
+
+=break
+
+
+ package CocktailFu::Schema::Result::Ingredient;
+
+ use Moose;
+ use namespace::autoclean;
+ BEGIN { extends 'DBIx::Class::Core' }
+
+ __PACKAGE__->table('**ingredients**');
+ __PACKAGE__->add_columns(qw/**ingredient_id name description**/);
+ __PACKAGE__->set_primary_key('**ingredient_id'**);
+ __PACKAGE__->add_unique_constraint([qw/**name**/]);
+
 
 
 
@@ -145,29 +196,32 @@ The {{has_one}} relationship
 
 =autopause
 
-* Use {{has_one}} when there is 1:1 relation between two tables.
-
 * **Other** table has primary key of **this** table in one of its
      columns
 
- +------------+         +--------------+ 
- | beverages  |         | instructions |
- |------------|         |--------------|
- | **id**         |--------1| id           |
- | name       |         | **beverage**     |
- | description|         | instruction  |
- |            |         +--------------+
- +------------+         
+    **has_one**                   +--------------+      
+ +----------------+           | instructions |      
+ | beverages      |           |--------------|      
+ |----------------|           | id           |      
+ | **beverage_id**    |----------1| **beverage_id**  |
+ | name           |           | instruction  |      
+ | description    |           +--------------+      
+ |                |         
+ +----------------+         
+
+
+* Use {{has_one}} when there is 1:1 relation between two tables.
 
 
 =break
 
  package CocktailFu::Schema::Result::Beverage;
  #..
-    __PACKAGE__->**has_one**(
-        instruction => Instruction => { 
-            'foreign.beverage' => 'self.id' } 
+ __PACKAGE__->**has_one**(
+        instruction => Instruction => 
+            { 'foreign.beverage_id' => 'self.beverage_id' } 
        );
+
 
 
 The {{has_many}} relationship
@@ -178,28 +232,31 @@ The {{has_many}} relationship
   table's primary key.
 
 * beverages {{has_many}} recipes
+
 * ingredients {{has_many}} recipes
+
 * measurements {{has_many}} recipes
 
   **has_many**          
- +------------+         +-------------+      **has_many**
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|         | measurement |      | name        |
- |            |         | quantity    |      | description |
- +------------+         +-------------+      +-------------+
+ +--------------+         +-----------------+        **has_many** 
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                         
+                          
 
 =break
+
 
  package CocktailFu::Schema::Result::Beverage;
  ...
  __PACKAGE__->**has_many**(
      recipes => 'Recipe' => { 
-         'foreign.beverage' => 'self.id' 
-         } 
-    );
+         'foreign.beverage' => 'self.id' } );
 
  package CocktailFu::Schema::Result::Ingredient;
  ...
@@ -222,25 +279,24 @@ The {{belongs_to}} relationship
 * Use {{belongs_to}} to reference foreign key table.
 * recipes {{belongs_to}} beverages, ingredients, measurements
 
-                        **belongs_to**
- +------------+         +-------------+
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|         | measurement |      | name        |
- |            |         | quantity    |      | description |
- +------------+         +-------------+      +-------------+
-
+                           **belongs_to**
+ +--------------+         +-----------------+      
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                          
 
 
 =break
  package CocktailFu::Schema::Result::Recipe;
  #..
  __PACKAGE__->**belongs_to**(
-     beverage => Beverage => { 
-         'foreign.id' => 'self.beverage' 
-   } );
+     beverage => Beverage => 
+     { 'foreign.id' => 'self.beverage' } );
 
  __PACKAGE__->**belongs_to**(
      ingredient => 'CocktailFu::Schema::Result::Ingredient' 
@@ -257,36 +313,83 @@ The {{many_to_many}} relationship
 *  combines {{has_many}} and {{belongs_to}}
 
     
-         _________________**many_to_many**__________
-        /                                       \
- +------------+         +-------------+         |
- | beverages  |         | recipes     |      +-------------+
- |------------|         |-------------|      | ingredients |
- | id         |--------<| beverage    |      |-------------|
- | name       |         | ingredient  |>-----| id          |
- | description|         | measurement |      | name        |
- |            |         | quantity    |      | description |
- +------------+         +-------------+      +-------------+
-
+         _________________**many_to_many**____________
+        /                                          \
+ +--------------+         +-----------------+       \  
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                          
 
 =break
 
  package CocktailFu::Schema::Result::Beverage;
  #..
 
- __PACKAGE__->many_to_many( ingredients => recipes => 'ingredient' );
+ __PACKAGE__->**many_to_many**( ingredients => recipes => 'ingredient' );
 
 
-Resolving DBIC relationships
+=section  #. Using the DBIC model
+
+
+Get at the data in the model
 
 =autopause
 
-* Row level: {{has_one}}, {{belongs_to}} 
+* Initialise the model
 
- my $instruction = $beverage->instruction;
- say $instruction->instruction;
+ my $dbic = CocktailFu::Schema->connect($dsn,$user,$password);
 
-* ResultSet level: {{has_many}}, {{many_to_many}} 
+* Get reference to a {{ResultSet}} (i.e. {{table}})
+
+ my $beverages_rs = $dbic->resultset('Beverage');
+
+* Search table
+
+ my $subset_rs = $beverage_rs->search(
+        {description => {ilike => '%Martini%'}});
+
+* Search that {{ResultSet}}  
+
+ my $vespers_martini = $subset_rs->find({name => 'vespers-martini'});
+
+
+Usual CRUD
+
+=autopause
+
+* Create a row
+
+ my $beverage = $dbic->resultset('Beverage')->create(
+     {
+         name        => 'mojito',
+         description => 'Mojito'
+     }
+ );
+
+* Update a row
+
+ $beverage->description('B-52');
+ $beverage->update;
+
+* Delete
+
+ $beverage->delete;
+
+
+=section #. Using the DBIC relationships
+
+ResultSet level
+
+=autopause
+
+* Return {{ResultSet}} objects representing sets of rows
+
+*  {{has_many}} relations
 
  my $recipes = $beverage->recipes; 
 
@@ -295,30 +398,133 @@ Resolving DBIC relationships
     say $recipe->measurement->unit;
  }
 
+* {{many_to_many}}
 
-Inserting Data
+ my $ingredients = $beverage->**ingredients**;
+
+ while (my $ingredient = $ingredients->next) {
+    say $ingredient->description;
+ }
+
+
+
+Row level queries
 
 =autopause
 
-* Create a row
+* Return object that represents a {{row}} in the db.
 
- my $beverage = $dbic->resultset('Beverage')->create({
-        name => 'mojito',
-        description => 'Mojito'
-    });
+* {{has_one}}, {{belongs_to}} 
 
-* Use {{has_one}} to create beverage **and** add instruction  
+
+ my $ingredient = $recipe->ingredient;
+ say $ingredient->description;
+
+
+
+=section #. Back to the app
+
+
+Inserting the data
+
+=autopause
+
+* Sample data:
+
+    title: 'Vesper Martini'
+    - ingredients:
+        - 3 cl Gordon's Gin
+        - 1 cl Vodka
+        - 1/2 cl Kina Lillet
+        - 1 Lemon Peel
+    instructions: 'Shaken, not stirred'
+
+
+* Insert {{beverage}}
+
+ my $beverage = $dbic->resultset('Beverage')->create(
+     { 
+        name => 'vesper-martini', 
+        description => 'Vesper Martini', 
+     }
+ );
+
+=break
+
+* Insert {{instruction }} 
+
+ my $instruction = $dbic->resultset('Instruction')->create(
+    { 
+        beverage_id => $beverage->id,
+        instruction => 'Shaken, not stirred...' 
+    }
+ );
+ 
+=break
+
+* or, insert beverage and instruction using {{has_one}}
 
  my $beverage = $beverage_rs->create(
      {
-         name        => 'zombie',
-         description => 'Zombie',
-         'instruction.instruction' => qq{Shake over ice in ..
+         name        => 'vesper-martini',
+         description => 'Vesper Martini',
+         'instruction.instruction' => 'Shaken, not stirred...'
      },
      { join => 'instruction' }
  );
 
+=pause
+
+* Equivalent SQL:
+
+    INSERT INTO beverages ( name, description) 
+    VALUES ( 'vesper-martini', 'Vesper Martini' ) RETURNING id
+
+    INSERT INTO instructions ( beverage_id, instruction) 
+    VALUES ( 2431, 'Shaken, not stirred...' ) RETURNING id
 
 
+Create a row in {{recipes}}
+
+* Insert {{ingredient}}
+
+ my $ingredient = $dbic->resultset('Ingredient')->create(
+     { name  => 'gordons-gin', description => q{Gordon's Gin} }
+ );
+
+* Insert {{measurement}}
+
+ my $measurement = $dbic->resultset('Measurement')
+    ->create( { unit => 'cl' } );
+
+* Insert {{recipe}} using above
+
+ my $recipe = $dbic->resultset('Recipe')->create(
+     {
+         beverage    => $beverage->id,
+         ingredient  => $ingredient->id,
+         measurement => $measurement->id,
+         quantity    => '1' });
 
 
+=break
+
+
+* Alternatively, do everything at once
+
+ my $recipe = $beverage->**add_to_recipes**(
+     {
+         ingredient => {
+             name        => 'gordons-gin',
+             description => q{Gordon's Gin}
+         },
+         measurement => { unit => 'cl' },
+         quantity    => 3
+     },
+     { join => { recipes => [qw/ingredient measurement/] } }
+ );
+
+* {{has_many}} relation creates implicit add_to_{{relationship}}
+
+* {{ingredient}}, {{measurement}} created if they do not exist
+  and used to create new recipe with correct {{beverage}}.
