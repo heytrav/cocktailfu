@@ -543,67 +543,12 @@ Fetching cocktails using DBI
 
 =example
 
-    my $select_beverages = qq{
-        SELECT
-            me.id,
-            me.name,
-            me.description
-        FROM
-            beverages me
-        WHERE ( me.name = ? )
-    };
-
-    my $beverage_stmt  = $dbh->prepare($select_beverages);
-    my $select_recipes = qq{
-        SELECT
-            me.beverage,
-            me.ingredient,
-            me.measurement,
-            me.quantity
-        FROM
-            recipes me
-        WHERE
-            ( me.beverage = ? )
-        };
-    my $recipe_stmt        = $dbh->prepare($select_recipes);
-    my $select_ingredients = qq{
-        SELECT
-            me.id,
-            me.name,
-            me.description
-        FROM
-            ingredients me
-        WHERE
-            ( me.id = ? )
-        };
-    my $ingredient_stmt = $dbh->prepare($select_ingredients);
-
-    my $select_measurement = qq{
-            SELECT
-                me.id,
-                me.name,
-                me.unit
-            FROM
-                measurements me
-            WHERE
-                ( me.id = ? )
-        };
-    my $measurement_stmt   = $dbh->prepare($select_measurement);
-    my $select_instruction = qq{
-            SELECT
-                me.id,
-                me.beverage,
-                me.instruction
-            FROM
-                instructions me
-            WHERE
-                ( me.beverage = ? )
-        };
-    my $instruction_stmt = $dbh->prepare($select_instruction);
-
     # Fetch beverage from db
+    my $beverage_stmt  = $dbh->prepare(
+        qq{ SELECT me.id, me.name, me.description
+            FROM beverages me WHERE ( me.name = ? ) }
+    );
     $beverage_stmt->execute($beverage_name);
-    $self->app->log->debug($select_beverages);
     my $beverage_set = $beverage_stmt->fetchall_arrayref;
 
     if ($beverage_set) {
@@ -613,7 +558,10 @@ Fetching cocktails using DBI
             @{$first_beverage}[ 0, 2 ];
 
         # fetch beverage instructions
-        $self->app->log->debug($select_instruction);
+        my $instruction_stmt = $dbh->prepare( qq{
+                SELECT me.id, me.beverage, me.instruction
+                FROM instructions me WHERE ( me.beverage = ? ) }
+        );
         $instruction_stmt->execute($beverage_id);
         my $instruct_result = $instruction_stmt->fetchrow_arrayref;
         my $instruction     = $instruct_result->[2];
@@ -621,8 +569,10 @@ Fetching cocktails using DBI
         $result_hash->{instruction} = $instruction;
 
         # Fetch related recipes
+        my $recipe_stmt        = $dbh->prepare(
+        qq{ SELECT me.beverage, me.ingredient, me.measurement, me.quantity
+            FROM recipes me WHERE ( me.beverage = ? ) });
         $recipe_stmt->execute($beverage_id);
-        $self->app->log->debug($select_recipes);
         my $recipe_set = $recipe_stmt->fetchall_arrayref;
 
         foreach my $recipe ( @{$recipe_set} ) {
@@ -630,32 +580,36 @@ Fetching cocktails using DBI
                 @{$recipe};
 
             # Fetch ingredient
-            $self->app->log->debug($select_ingredients);
+            my $ingredient_stmt = $dbh->prepare(
+            qq{ SELECT me.id, me.name, me.description FROM ingredients me 
+            WHERE ( me.id = ? ) });
+
             $ingredient_stmt->execute($ingredient_id);
             my $ingred_result = $ingredient_stmt->fetchall_arrayref;
             my $ingredient_description = $ingred_result->[0]->[2];
 
             # Fetch measurement
-            $self->app->log->debug($select_measurement);
+            my $measurement_stmt   = $dbh->prepare( qq{
+                    SELECT me.id, me.name, me.unit FROM measurements me 
+                    WHERE ( me.id = ? )
+                }
+            );
             $measurement_stmt->execute($measurement_id);
             my $measurement_result = $measurement_stmt->fetchall_arrayref;
             my $measurement_unit   = $measurement_result->[0]->[2];
-            push @{ $result_hash->{ingredients} },
-                {
-                ingredient => $ingredient_description,
-                quantity   => $quantity,
-                unit       => $measurement_unit
-                };
+
+            # do something with data
         }
     }
 
 
-* better way to do it 
+* Do it all in one query
+
 
 =example
 
 
-    my $query = qq{
+    my $stmt = $dbh->prepare( qq{
         SELECT
             me.id,
             me.name,
@@ -686,24 +640,14 @@ Fetching cocktails using DBI
         WHERE
             ( me.name = ? )
         ORDER BY
-            me.id
-
-    };
-    my $stmt = $dbh->prepare($query);
-    $self->app->log->debug($query);
-    $stmt->execute($beverage_name);
+            me.id }
+    );
+    $stmt->execute('vespers-martini');
     my $results = $stmt->fetchall_arrayref;
     foreach my $result ( @{$results} ) {
         my ( $beverage_name, $instruction, $quantity, $ingredient, $unit )
             = @{$result}[ 2, 5, 9, 12, 15 ];
-        $result_hash->{title}         = $beverage_name,
-            $result_hash->{instruction} = $instruction;
-        push @{ $result_hash->{ingredients} },
-            {
-            quantity   => $quantity,
-            ingredient => $ingredient,
-            unit       => $unit
-            };
+        # do stuff with data
     }
 
 
@@ -714,21 +658,13 @@ Fetching cocktails using DBIC
 
  my $beverages = $self->db->resultset('Beverage');
 
- my $beverage = $beverages->find( { name => $beverage_name } );
+ my $beverage = $beverages->find( { name => 'vespers-martini' } );
  my $recipes  = $beverage->recipes;
- my $hash     = {
-     title       => $beverage->description,
-     instruction => $beverage->instructions->first->instruction,
- };
+
  while ( my $recipe = $recipes->next ) {
      my $ingredient  = $recipe->ingredient;
      my $measurement = $recipe->measurement;
-     push @{ $hash->{ingredients} },
-       {
-         quantity   => $recipe->quantity,
-         unit       => $measurement->unit,
-         ingredient => $ingredient->description,
-       };
+     # do stuff with data
  }
 
 
