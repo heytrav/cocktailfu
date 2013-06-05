@@ -722,8 +722,8 @@ The {{ORMs make too many queries!}} problem
  Execution took 0.0015 seconds.
  ----------------------------------------------------------------------------
 
-* 9 queries total: 1 for beverage, 1 for instruction, 1 for recipe, 3 for
-  ingredients, 3 for measurement
+* 9 queries total: 1 for beverage, 1 for instruction, 
+  1 for recipe, 3 for ingredients, 3 for measurement
 
 * Naïve execution--not ideal!
 
@@ -781,7 +781,7 @@ Same thing using {{prefetch}}
  ORDER BY
      me.id
  Parameters:	'vesper'
- Execution took 0.0985 seconds.
+ Execution took 0.0021 seconds.
 
 
 * 1 query gets everything at once
