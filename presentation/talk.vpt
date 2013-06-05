@@ -1,16 +1,22 @@
-=title   {{DBIx::Class}}
+=title   {{DBIx::Class}} 
+       (my attempt at) An instructive presentation
+
+
+=presenter Travis Holton
+=duration 45 minutes        
 
 
 
 =break
 
 
-=section #. Idea for an app
+Instructive demo...need data
 
-A Cocktail Recipe Database
 
 =autopause
 
+* >6000 cocktail recipes scraped years ago (thanks 
+  "Spidering Hacks"; O'Reilly, 2003)
 
 * Example:
 
@@ -27,27 +33,27 @@ A Cocktail Recipe Database
                   and strain into a large highball 
                   glass over crushed ice.'
 
-* {{beverage}} will have {{recipe}} consisting of set of
-  {{ingredients}} with {{measurement}} and quantity. 
+
+
+=section #. Modeling A Cocktail Recipe Database
 
 
 Database Schema
 
 =animation
-                      
-                      
+* {{beverage}} has a description and name abbreviated for url
+
  +--------------+
  | beverages    |
  |--------------|
  | beverage_id  |
  | name         |
  | description  |
- |              |
  +--------------+
 
 
 =animation
-
+* {{beverage}} has one instruction, e.g. {{Shaken, not stirred..}}
                       
  +--------------+
  | beverages    |
@@ -55,7 +61,6 @@ Database Schema
  | beverage_id  |
  | name         |
  | description  |
- |              |
  +--------------+
        |         
        |                                       
@@ -70,7 +75,7 @@ Database Schema
                 
 
 =animation
-
+* {{ingredients}} include: {{Rum, Vodka, Bacardi, OJ, salt}}, etc (unique)
                       
  +--------------+                                  
  | beverages    |                                  +---------------+
@@ -78,10 +83,9 @@ Database Schema
  | beverage_id  |                                  |---------------|
  | name         |                                  | ingredient_id |
  | description  |                                  | name          |
- |              |                                  | description   |
- +--------------+                                  +---------------+
+ +--------------+                                  | description   |
+       |                                           +---------------+
        |                                           
-       |                                       
        1                                       
  +-------------+                               
  | instructions|                               
@@ -93,6 +97,7 @@ Database Schema
                       
 
 =animation
+* {{measurements}} include: {{cl, oz, tsp, g, pinch, dash}}, etc. (unique)
                       
  +--------------+                                  
  | beverages    |                                  +---------------+
@@ -100,9 +105,8 @@ Database Schema
  | beverage_id  |                                  |---------------|
  | name         |                                  | ingredient_id |
  | description  |                                  | name          |
- |              |                                  | description   |
- +--------------+                                  +---------------+
-       |                                           
+ +--------------+                                  | description   |
+       |                                           +---------------+
        |                   +----------------+  
        1                   | measurements   |  
  +-------------+           |----------------|  
@@ -112,18 +116,20 @@ Database Schema
  | beverage_id |           +----------------+  
  | instruction |
  +-------------+      
+                                                  
                       
 
 =animation
+* {{ingredients}}, {{measurements}} combined into a {{recipe}}
+
  +--------------+         +-----------------+      
  | beverages    |         | recipes         |      +---------------+
  |--------------|         |-----------------|      | ingredients   |
  | beverage_id  |--------<| beverage_id     |      |---------------|
  | name         |         | ingredient_id   |>-----| ingredient_id |
  | description  |    +---<| measurement_id  |      | name          |
- |              |    |    | quantity        |      | description   |
- +--------------+    |    +-----------------+      +---------------+
-       |             |   
+ +--------------+    |    | quantity        |      | description   |
+       |             |    +-----------------+      +---------------+
        |             |     +----------------+  
        1             |     | measurements   |  
  +-------------+     |     |----------------|  
@@ -139,8 +145,32 @@ Database Schema
 =section #. Setting up {{DBIx::Class}}
 
 
+Setup the model
+
+=autopause
+
+
+* Define a class to represent the {{model}}
+ 
+ package CocktailFu::Schema;
+
+ use Moose;
+ use namespace::autoclean;
+ BEGIN { extends 'DBIx::Class::Schema' }
+
+ __PACKAGE__->load_namespaces();
+ __PACKAGE__->meta->make_immutable( inline_constructor => 0 );
+
+ 1;
+
+* Instance represents {{database}}
+
+ my $model = CocktailFu::Schema->connect($dsn, $user, $password);
+
+
 
 Defining table relations
+
 
 =autopause
 * Modules (i.e. {{.pm}} files) represent {{table}} definitions
@@ -239,143 +269,18 @@ Usual CRUD
 =section #. Modeling relationships between tables
 
 
-
-The {{has_many}} relationship
-
-=autopause
-
-* Use {{has_many}} when foreign table has current 
-  table's primary key.
-
-* beverages {{has_many}} recipes
-
-* ingredients {{has_many}} recipes
-
-* measurements {{has_many}} recipes
-
-  **has_many**          
- +--------------+         +-----------------+        **has_many** 
- | beverages    |         | recipes         |      +---------------+
- |--------------|         |-----------------|      | ingredients   |
- | beverage_id  |--------<| beverage_id     |      |---------------|
- | name         |         | ingredient_id   |>-----| ingredient_id |
- | description  |         | measurement_id  |      | name          |
- |              |         | quantity        |      | description   |
- +--------------+         +-----------------+      +---------------+
-                         
-
-=break
+Main types of relationships to model
 
 
- package CocktailFu::Schema::Result::Beverage;
- ...
- __PACKAGE__->**has_many**(
-     recipes => 'Recipe' => { 
-         'foreign.beverage_id' => 'self.beverage_id' } );
+* has_one
 
- package CocktailFu::Schema::Result::Ingredient;
- ...
- __PACKAGE__->**has_many**(
-     recipes => Recipe => {
-     'foreign.ingredient_id' => 'self.ingredient_id' } );
+* {{might_have}}
 
+* belongs_to
 
- package CocktailFu::Schema::Result::Measurement;
- ...
- __PACKAGE__->**has_many**(
-         recipes => Recipe => {
-         'foreign.measurement_id' => 'self.measurement_id' } );
+* has_many
 
-
-The {{many_to_many}} relationship
-
-*  combines {{has_many}} and {{belongs_to}}
-
-    
-         _________________**many_to_many**____________
-        /                                          \
- +--------------+         +-----------------+       \  
- | beverages    |         | recipes         |      +---------------+
- |--------------|         |-----------------|      | ingredients   |
- | beverage_id  |--------<| beverage_id     |      |---------------|
- | name         |         | ingredient_id   |>-----| ingredient_id |
- | description  |         | measurement_id  |      | name          |
- |              |         | quantity        |      | description   |
- +--------------+         +-----------------+      +---------------+
-                          
-
-
-=break
-
- package CocktailFu::Schema::Result::Beverage;
- #..
-
- __PACKAGE__->**many_to_many**( ingredients => recipes => 'ingredient' );
-
-
-
-Using {{has_many}} and {{many_to_many}}
-
-=autopause
-
-*  {{has_many}} relations
-
- my $recipes = $beverage->recipes; 
-
- while (my $recipe = $recipes->next){
-    say $recipe->ingredient->description;
-    say $recipe->measurement->unit;
- }
-
-* {{many_to_many}}
-
- my $ingredients = $beverage->**ingredients**;
-
- while (my $ingredient = $ingredients->next) {
-    say $ingredient->description;
- }
-
-
-* Both return {{ResultSet}} objects representing sets of rows
-
-
-
-The {{belongs_to}} relationship
-
-
-=autopause
-
-* Use {{belongs_to}} to reference foreign key table.
-
-* recipes {{belongs_to}} beverages, ingredients, measurements
-
-                           **belongs_to**
- +--------------+         +-----------------+      
- | beverages    |         | recipes         |      +---------------+
- |--------------|         |-----------------|      | ingredients   |
- | beverage_id  |--------<| beverage_id     |      |---------------|
- | name         |         | ingredient_id   |>-----| ingredient_id |
- | description  |         | measurement_id  |      | name          |
- |              |         | quantity        |      | description   |
- +--------------+         +-----------------+      +---------------+
-                          
-
-
-=break
- package CocktailFu::Schema::Result::Recipe;
- #..
- __PACKAGE__->**belongs_to**(
-     beverage => Beverage => 
-     { 'foreign.beverage_id' => 'self.beverage_id' } );
-
- __PACKAGE__->**belongs_to**(
-     ingredient => 'CocktailFu::Schema::Result::Ingredient' 
-     => { 'foreign.ingredient_id' => 'self.ingredient_id' } );
-
- __PACKAGE__->**belongs_to**(
-     measurement 
-         => 'CocktailFu::Schema::Result::Measurement' 
-         => { 'foreign.measurement_id' => 'self.measurement_id' } );
+* many_to_many
 
 
 
@@ -404,9 +309,50 @@ The {{has_one}} relationship
  package CocktailFu::Schema::Result::Beverage;
  #..
  __PACKAGE__->**has_one**(
-        instruction => Instruction => 
+        **instruction** => Instruction => 
             { 'foreign.beverage_id' => 'self.beverage_id' } 
        );
+
+
+The {{belongs_to}} relationship
+
+
+=autopause
+
+* Use {{belongs_to}} to reference foreign key table.
+
+* recipes {{belongs_to}} beverages, ingredients, measurements
+
+                           **belongs_to**
+ +--------------+         +-----------------+      
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                          
+
+
+=break
+ package CocktailFu::Schema::Result::Recipe;
+ #..
+ __PACKAGE__->**belongs_to**(
+     **beverage** => Beverage => 
+     { 'foreign.beverage_id' => 'self.beverage_id' } );
+
+ __PACKAGE__->**belongs_to**(
+     **ingredient** => 'CocktailFu::Schema::Result::Ingredient' 
+     => { 'foreign.ingredient_id' => 'self.ingredient_id' } );
+
+ __PACKAGE__->**belongs_to**(
+     **measurement** 
+         => 'CocktailFu::Schema::Result::Measurement' 
+         => { 'foreign.measurement_id' => 'self.measurement_id' } );
+
+
+
 
 
 Using {{has_one}} and {{belongs_to}}
@@ -422,7 +368,108 @@ Using {{has_one}} and {{belongs_to}}
 
 
 
-=section #. Back to the app
+The {{has_many}} relationship
+
+=autopause
+
+* Use {{has_many}} when foreign table has current 
+  table's primary key.
+
+  **has_many**          
+ +--------------+         +-----------------+        **has_many** 
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+
+
+* beverages {{has_many}} recipes
+
+* ingredients {{has_many}} recipes
+
+* measurements {{has_many}} recipes
+                         
+
+=break
+
+
+ package CocktailFu::Schema::Result::Beverage;
+ ...
+ __PACKAGE__->**has_many**(
+     recipes => 'Recipe' => { 
+         'foreign.beverage_id' => 'self.beverage_id' } );
+
+ package CocktailFu::Schema::Result::Ingredient;
+ ...
+ __PACKAGE__->**has_many**(
+     recipes => Recipe => {
+     'foreign.ingredient_id' => 'self.ingredient_id' } );
+
+
+ package CocktailFu::Schema::Result::Measurement;
+ ...
+ __PACKAGE__->**has_many**(
+         recipes => Recipe => {
+         'foreign.measurement_id' => 'self.measurement_id' } );
+
+=break
+
+
+ my $recipes = $beverage->**recipes**; 
+
+ while (my $recipe = $recipes->next){
+    say $recipe->ingredient->description;
+    say $recipe->measurement->unit;
+ }
+
+
+
+The {{many_to_many}} relationship
+
+*  combines {{has_many}} and {{belongs_to}}
+
+    
+         _________________**many_to_many**____________
+        /                                          \
+       /       --has_many->          --belongs_to-> \
+ +--------------+         +-----------------+        \  
+ | beverages    |         | recipes         |      +---------------+
+ |--------------|         |-----------------|      | ingredients   |
+ | beverage_id  |--------<| beverage_id     |      |---------------|
+ | name         |         | ingredient_id   |>-----| ingredient_id |
+ | description  |         | measurement_id  |      | name          |
+ |              |         | quantity        |      | description   |
+ +--------------+         +-----------------+      +---------------+
+                          
+
+
+=break
+
+ package CocktailFu::Schema::Result::Beverage;
+ #..
+
+ __PACKAGE__->**many_to_many**( **ingredients** 
+    => recipes => 'ingredient' );
+
+
+
+ my $ingredients = $beverage->**ingredients**;
+
+ while (my $ingredient = $ingredients->next) {
+    say $ingredient->description;
+ }
+
+
+* Both return {{ResultSet}} objects representing sets of rows
+
+
+
+
+
+=section #. The actual app
 
 
 Inserting the data
@@ -537,8 +584,215 @@ Create a row in {{recipes}}
 
 
 
-=section #. More complicated queries
+=section #. Retrieving data
 
+
+The {{ORMs make too many queries!}} problem
+
+=autopause
+
+* What happens when code does this?
+
+ my $beverage_rs = $dbic->resultset('Beverage');
+ my $beverage = $beverage_rs->find({name => 'vespers-martini'});
+ my $recipes = $beverage->recipes;
+ while (my $recipe = $recipes->next) {
+    my $ingredient = $recipes->ingredient->description;
+    my $measurement = $recipes->measurement->unit;
+ }
+
+=example
+
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description 
+ FROM
+     beverages me 
+ WHERE
+     ( me.name = ? )
+ Parameters:	'vesper'
+ Execution took 0.0025 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.beverage,
+     me.ingredient,
+     me.measurement,
+     me.quantity 
+ FROM
+     recipes me 
+ WHERE
+     ( me.beverage = ? )
+ Parameters:	'5878'
+ Execution took 0.0008 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description 
+ FROM
+     ingredients me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'20'
+ Execution took 0.0006 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.unit 
+ FROM
+     measurements me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'3'
+ Execution took 0.0006 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description 
+ FROM
+     ingredients me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'356'
+ Execution took 0.0002 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.unit 
+ FROM
+     measurements me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'3'
+ Execution took 0.0002 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description 
+ FROM
+     ingredients me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'1715'
+ Execution took 0.0002 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.unit 
+ FROM
+     measurements me 
+ WHERE
+     ( me.id = ? )
+ Parameters:	'3'
+ Execution took 0.0002 seconds.
+ ------------------------------------------------------------------------------
+
+ Executing:
+ SELECT
+     me.id,
+     me.beverage,
+     me.instruction 
+ FROM
+     instructions me 
+ WHERE
+     ( me.beverage = ? )
+ Parameters:	'5878'
+ Execution took 0.0015 seconds.
+ ----------------------------------------------------------------------------
+
+* 9 queries total: 1 for beverage, 1 for instruction, 1 for recipe, 3 for
+  ingredients, 3 for measurement
+
+* Naïve execution--not ideal!
+
+
+
+Same thing using {{prefetch}}
+
+
+=autopause
+
+* What happens when code does this?
+
+ my $beverage_rs = $dbic->resultset('Beverage')->search(
+        {},
+        {
+            **prefetch => ['instruction',{recipes => 'ingredient'}]**
+        }
+    );
+ my $beverage = $beverage_rs->find({name => 'vespers-martini'});
+ my $recipes = $beverage->recipes;
+ while (my $recipe = $recipes->next) {
+    my $ingredient = $recipes->ingredient->description;
+    my $measurement = $recipes->measurement->unit;
+ }
+
+
+=example
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description,
+     instruction.id,
+     instruction.beverage,
+     instruction.instruction,
+     recipes.beverage,
+     recipes.ingredient,
+     recipes.measurement,
+     recipes.quantity,
+     ingredient.id,
+     ingredient.name,
+     ingredient.description,
+     measurement.id,
+     measurement.name,
+     measurement.unit 
+ FROM
+     beverages me  
+     JOIN instructions instruction ON instruction.beverage = me.id 
+     LEFT JOIN recipes recipes ON recipes.beverage = me.id 
+     LEFT JOIN ingredients ingredient ON ingredient.id = recipes.ingredient 
+     LEFT JOIN measurements measurement ON measurement.id = recipes.measurement 
+ WHERE
+     ( me.name = ? ) 
+ ORDER BY
+     me.id
+ Parameters:	'vesper'
+ Execution took 0.0985 seconds.
+
+
+* 1 query gets everything at once
+
+* a little better
+
+
+
+
+
+=section #. Other stuff
 
 joins, {{order by}}, {{group by}} 
 

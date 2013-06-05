@@ -1,21 +1,27 @@
 % layout 'default';
 % title 'find cocktails';
 
-<%== $form->render %>
+<div class="row-fluid">
+    <div class="span8">
+        <%== $form->render %>
+    </div>
 
-% if ($cocktails and $cocktails->count) {
-    <ul >
-        % while (my $cocktail = $cocktails->next) {
-            <li>
-                <a href="<%=
-                url_for(
-                    'recipe',
-                    beverage => $cocktail->name,
-                    prefetch => 1
-                  )
-                %>"><%= $cocktail->description %></a>
-            </li>
-        %   }
-    </ul>
+    <div class="span4">
+        % if ($cocktails and $cocktails->count) {
+            <ul >
+                % while (my $cocktail = $cocktails->next) {
+                    <li>
+                        <a href="<%=
+                        url_for(
+                            'recipe',
+                            beverage => $cocktail->name,
+                            prefetch => 1
+                          )
+                        %>"><%= $cocktail->description %></a>
+                    </li>
+                %   }
+            </ul>
 
-% }
+        % }
+    </div>
+</div>

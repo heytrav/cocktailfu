@@ -1,4 +1,10 @@
 % layout 'default';
 % title 'Create a cocktail';
 
-<%== $form->render %>
+<%== $form->render_repeatable_js %>
+<div class="row">
+    <div class="span8">
+    
+        <%== $form->render %>
+    </div>
+</div>

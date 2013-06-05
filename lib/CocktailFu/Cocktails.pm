@@ -308,6 +308,7 @@ sub mixer {
                 required  => \@required
             }
         );
+        $results = $results->search({},{order_by => {-asc => [qw/me.name/]}});
     }
     $self->stash( form => $form, cocktails => $results );
 }

@@ -2,7 +2,7 @@
 % title 'Alphabetical List';
 
 %= include 'cocktails/page';
-<ul>
+<ul class="unstyled">
     % while (my $beverage = $beverages->next) {
         <li>
             <a href="<%=
