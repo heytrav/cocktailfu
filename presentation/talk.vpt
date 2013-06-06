@@ -149,6 +149,26 @@ Setup the model
 
 =autopause
 
+* example class structure
+
+
+    ├── Schema.pm
+    ├── Schema
+    │   ├── Result
+    │   │   ├── Beverage.pm
+    │   │   ├── Ingredient.pm
+    │   │   ├── Instruction.pm
+    │   │   ├── Measurement.pm
+    │   │   └── Recipe.pm
+    │   └── ResultSet
+    │       └── Beverage.pm
+    ├── SqlProfiler.pm
+
+
+
+=break
+
+
 
 * Define a class to represent the {{model}}
  
@@ -173,7 +193,9 @@ Defining table relations
 
 
 =autopause
-* Modules (i.e. {{.pm}} files) represent {{table}} definitions
+* Create modules that correspond to {{tables}}
+
+* Model for {{beverages}}
 
  package CocktailFu::Schema::Result::Beverage;
 
@@ -187,6 +209,8 @@ Defining table relations
  __PACKAGE__->add_unique_constraint([qw/**name**/]);
 
 =break
+
+* Model for {{recipes}}
 
  package CocktailFu::Schema::Result::Recipe;
 
@@ -205,6 +229,8 @@ Defining table relations
 =break
 
 
+* Model for {{ingredients}}
+
  package CocktailFu::Schema::Result::Ingredient;
 
  use Moose;
@@ -216,12 +242,16 @@ Defining table relations
  __PACKAGE__->set_primary_key('**ingredient_id'**);
  __PACKAGE__->add_unique_constraint([qw/**name**/]);
 
+* {{instructions}} and {{measurements}} similar
+
 
 
 =section  #. Using the DBIC model
 
 
+
 Get at the data in the model
+
 
 =autopause
 
@@ -241,6 +271,45 @@ Get at the data in the model
 * Search the result of previous search
 
  my $vespers_martini = $subset_rs->find({name => 'vespers-martini'});
+ say $vespers_martini->beverage_id; # e.g. "243"
+
+
+Searching the db
+
+
+=autopause
+
+
+* Basic {{search}}
+ 
+ my $rs = $dbic->resultset('Ingredient')->search(
+  { description => 'Orange Juice' }
+ );
+
+* Returns a {{DBIx::Class::ResultSet}} object
+
+* Can iterate over using next
+
+  while (my $ingredient = $rs->next) {
+
+* Can get as array
+
+ my @ingredients = $rs->all;
+
+=break
+
+* {{find}}
+
+  my $ingredient = $ingredient_rs->find(27);
+  my $other_ingredient = $ingredient_rs->find(
+    {name => 'rum-and-coke'});
+
+* Use wth primary key and unique constraint columns
+  to return {{row}} objects
+
+ say $ingredient->description; # 'Rum and Coke'
+
+
 
 
 Usual CRUD
@@ -274,13 +343,14 @@ Main types of relationships to model
 
 * has_one
 
-* {{might_have}}
-
 * belongs_to
 
 * has_many
 
 * many_to_many
+
+* {{might_have}}
+
 
 
 
@@ -399,20 +469,20 @@ The {{has_many}} relationship
  package CocktailFu::Schema::Result::Beverage;
  ...
  __PACKAGE__->**has_many**(
-     recipes => 'Recipe' => { 
+     **recipes** => 'Recipe' => { 
          'foreign.beverage_id' => 'self.beverage_id' } );
 
  package CocktailFu::Schema::Result::Ingredient;
  ...
  __PACKAGE__->**has_many**(
-     recipes => Recipe => {
+     **recipes** => Recipe => {
      'foreign.ingredient_id' => 'self.ingredient_id' } );
 
 
  package CocktailFu::Schema::Result::Measurement;
  ...
  __PACKAGE__->**has_many**(
-         recipes => Recipe => {
+         **recipes** => Recipe => {
          'foreign.measurement_id' => 'self.measurement_id' } );
 
 =break
@@ -469,7 +539,7 @@ The {{many_to_many}} relationship
 
 
 
-=section #. The actual app
+=section #. More Data Manipulation
 
 
 Inserting the data
@@ -587,7 +657,7 @@ Create a row in {{recipes}}
 =section #. Retrieving data
 
 
-The {{ORMs make too many queries!}} problem
+The {{stupid ORM makes too many queries!}} problem
 
 =autopause
 
@@ -787,6 +857,48 @@ Same thing using {{prefetch}}
 * 1 query gets everything at once
 
 * a little better
+
+=break
+
+
+
+* So, what is {{prefetch}}?
+
+
+ my $beverage_rs = $dbic->resultset('Beverage')->search(
+        {},
+        {
+            **join** => ['instruction',{recipes => 'ingredient'}]
+        }
+    );
+
+
+* {{prefetch}} basically {{join}} but keeps columns from joined tables
+
+
+=example
+
+ Executing:
+ SELECT
+     me.id,
+     me.name,
+     me.description,
+ FROM
+     beverages me  
+     JOIN instructions instruction ON instruction.beverage = me.id 
+     LEFT JOIN recipes recipes ON recipes.beverage = me.id 
+     LEFT JOIN ingredients ingredient ON ingredient.id = recipes.ingredient 
+     LEFT JOIN measurements measurement ON measurement.id = recipes.measurement 
+ WHERE
+     ( me.name = ? ) 
+ ORDER BY
+     me.id
+ Parameters:	'vesper'
+ Execution took 0.0021 seconds.
+
+
+
+
 
 
 
