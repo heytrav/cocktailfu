@@ -1,5 +1,5 @@
 =title   {{DBIx::Class}} 
-       (my attempt at) An instructive presentation
+       by example
 
 
 =presenter Travis Holton
@@ -149,10 +149,30 @@ Setup the model
 
 =autopause
 
+
 * example class structure
 
 
     ├── Schema.pm
+    ├── Schema
+    │   ├── Result
+    │   │   ├── Beverage.pm
+    │   │   ├── Ingredient.pm
+    │   │   ├── Instruction.pm
+    │   │   ├── Measurement.pm
+    │   │   └── Recipe.pm
+    │   └── ResultSet
+    │       └── Beverage.pm
+    ├── SqlProfiler.pm
+
+
+
+=break
+
+* Define a class to represent the {{model}}
+
+
+    ├── **Schema.pm**
     ├── Schema
     │   ├── Result
     │   │   ├── Beverage.pm
@@ -183,6 +203,7 @@ Setup the model
 
  1;
 
+
 * Instance represents {{database}}
 
  my $model = CocktailFu::Schema->connect($dsn, $user, $password);
@@ -192,8 +213,24 @@ Setup the model
 Defining table relations
 
 
-=autopause
 * Create modules that correspond to {{tables}}
+
+    ├── Schema.pm
+    ├── Schema
+    │   ├── Result
+    │   │   ├── **Beverage.pm**
+    │   │   ├── **Ingredient.pm**
+    │   │   ├── **Instruction.pm**
+    │   │   ├── **Measurement.pm**
+    │   │   └── **Recipe.pm**
+    │   └── ResultSet
+    │       └── Beverage.pm
+    ├── SqlProfiler.pm
+
+
+
+=break
+
 
 * Model for {{beverages}}
 
@@ -208,7 +245,9 @@ Defining table relations
  __PACKAGE__->set_primary_key('**beverage_id**');
  __PACKAGE__->add_unique_constraint([qw/**name**/]);
 
+
 =break
+
 
 * Model for {{recipes}}
 
@@ -274,7 +313,8 @@ Get at the data in the model
  say $vespers_martini->beverage_id; # e.g. "243"
 
 
-Searching the db
+
+Searching the db: ResultSets vs Rows
 
 
 =autopause
@@ -286,19 +326,22 @@ Searching the db
   { description => 'Orange Juice' }
  );
 
-* Returns a {{DBIx::Class::ResultSet}} object
+* {{DBIx::Class::ResultSet}}: Set of 0 or more rows from a search
 
-* Can iterate over using next
+* Can iterate over using {{next}}
 
-  while (my $ingredient = $rs->next) {
+  while (my $ingredient = $rs->**next**) { ..  }
 
-* Can get as array
+* Can get rows as array using {{all}}
 
- my @ingredients = $rs->all;
+ my @ingredients = $rs->**all**;
+ foreach my $ingredient (@ingredients){..}
+
 
 =break
 
-* {{find}}
+
+* Retrieve unique records with {{find}}
 
   my $ingredient = $ingredient_rs->find(27);
   my $other_ingredient = $ingredient_rs->find(
@@ -350,6 +393,13 @@ Main types of relationships to model
 * many_to_many
 
 * {{might_have}}
+
+=pause
+
+
+* Represent foreign key relations in db
+
+* make it possible to traverse relations in data
 
 
 
